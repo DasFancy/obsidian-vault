@@ -21,7 +21,7 @@ iotlab-auth -u YOUR_USERNAME
 **Step 1 - Reserve Nodes**
 Submit reservation requests to reserve specific A8 nodes to deploy the protocol. A standard reservation looks as follows: 
 ```
-iotlab-experiment submit -n qbeacon_scaling -d 10080 -l grenoble,a8,1-16
+iotlab-experiment submit -n qrng_run -d 280 -l grenoble,a8,1-5+7-12
 ```
 
 One can check the status of the nodes with the following code: 
@@ -60,5 +60,60 @@ bash deploy.sh 1 2 3 4 5 7 8 9 10 11 12 13 14 15 16
 
 ```
 ssh root@node-a8-1 "cd ~/QBeacon && python3 -c 'from beacon_config.settings import NODES; print(len(NODES))'"
+```
+
+**A Standard Top-to-Bottom Example**
+```
+# ── ON YOUR LOCAL MACHINE ──────────────────────────────────────────
+# Step 0: Upload clean working dir to frontend
+rsync -av --exclude='.git/' --exclude='.gitignore' \
+    --exclude='.venv/' --exclude='venv/' --exclude='env/' \
+    --exclude='__pycache__/' --exclude='*.pyc' \
+    --exclude='logs/' --exclude='results/' --exclude='.DS_Store' \
+    -e ssh ~/path/to/QBeacon/ siddas@grenoble.iot-lab.info:~/QBeacon/
+
+# ── ON THE FRONTEND (ssh siddas@grenoble.iot-lab.info) ─────────────
+# Step 1: Reserve, EXCLUDING dead a8-6
+iotlab-experiment submit -n pqfreeze -d 120 -l grenoble,a8,1-5+7-11
+iotlab-experiment wait
+
+# Step 2: BOOT CHECK (mandatory — "Running" ≠ "booted")
+grep "Boot A8 succeeded" ~/.iot-lab/last/log/a8_*.log
+#   Use ONLY node IDs that show this. Need ≥7 for healthy t margin.
+
+# Step 3: CLOCK CHECK (the #1 silent cause of commit_digest divergence)
+for n in 1 2 3 4 5 7 8 9 10 11; do
+  echo -n "node-a8-$n: "; ssh -o StrictHostKeyChecking=no root@node-a8-$n "date -u +%T" 2>/dev/null
+done
+#   All within ~1-2s. With chaining ON, epoch-0 skew cascades. If skewed → STOP.
+
+# Step 4: Deploy to nodes (confirmed-booted IDs only)
+cd ~/QBeacon && bash deploy.sh 1 2 3 4 5 7 8 9 10
+
+# Step 5: PQ RUN — export MINROOT_T (mandatory), no anchor, prng
+export MINROOT_T=1024        # ~5-6s/epoch; use 4096 (~22s) for paper-relevant T
+bash run_experiment.sh \
+    --mode qrng --epochs 10 \
+    --nodes "3 4 5 8 9 10 16 17 18 19" \
+    --crypto-profile post_quantum --tag pqqrng
+#   Do NOT export ANCHOR_PORT / ANCHOR_TCP.
+
+# Step 6: VERIFY — the whole point
+grep "FROZEN" ~/results/*_pqfreeze/node-*/logs/node_*.log | head
+#   MUST show: delay_mode=legacy:post_quantum:minroot T=1024   (NOT wesolowski)
+for i in 0 1 2 3 4 5 6 7 8; do
+  echo "=== node-id $i ==="
+  grep "FROZEN" ~/results/*_pqfreeze/node-*/logs/node_${i}.log 2>/dev/null | head -1
+done
+#   All nodes MUST print the SAME commit_digest= prefix per epoch.
+
+```
+
+**To Kill Processes running on Nodes**
+
+```
+for n in 1 3 4 5 8 9 10 16 17 18 19; do
+  ssh -o StrictHostKeyChecking=no root@node-a8-$n "pkill -f 'python3 main.py'" 2>/dev/null
+done
 ```
 
