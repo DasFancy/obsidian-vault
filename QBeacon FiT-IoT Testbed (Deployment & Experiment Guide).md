@@ -1,4 +1,4 @@
-Updated: Aug 31, 2026
+Updated: Sep 02, 2026
 
 Overview: 
 *This is my own guide to remind myself of the repetetive schemes I repeat but can't remember. 
@@ -115,5 +115,11 @@ done
 for n in 1 3 4 5 8 9 10 16 17 18 19; do
   ssh -o StrictHostKeyChecking=no root@node-a8-$n "pkill -f 'python3 main.py'" 2>/dev/null
 done
+```
+
+**Pulling folders down**
+
+```
+scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/logs/node_*' ~/qbeacon_sat_results/
 ```
 
