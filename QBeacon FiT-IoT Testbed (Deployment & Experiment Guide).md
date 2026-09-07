@@ -94,7 +94,7 @@ cd ~/QBeacon && bash deploy.sh 1 2 3 4 5 7 8 9 10
 export MINROOT_T=1024        # ~5-6s/epoch; use 4096 (~22s) for paper-relevant T
 bash run_experiment.sh \
     --mode qrng --epochs 10 \
-    --nodes "3 4 5 8 9 10 16 17 18 19" \
+    --nodes "200 201 202 203 204 205 206 207 208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223 224 225 226 227 228" \
     --crypto-profile post_quantum --tag pqqrng
 #   Do NOT export ANCHOR_PORT / ANCHOR_TCP.
 
@@ -120,6 +120,14 @@ done
 **Pulling folders down**
 
 ```
-scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/logs/node_*' ~/qbeacon_sat_results/
+scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/results/20260906_151700_qrng_n43_post_quantum_base' ~/qbeacon_sat_results/
 ```
 
+Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire data base, so it is better to pull only the .csv files. 
+
+```
+mkdir -p ~/qbeacon_sat_results/base
+scp siddas@grenoble.iot-lab.info:'~/results/20260906_151700_qrng_n43_post_quantum_base/node-*/logs/node_0/metrics_n43_qrng*.csv' \
+  ~/qbeacon_sat_results/base/
+
+```

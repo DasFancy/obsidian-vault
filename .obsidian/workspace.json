@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Beacon - Findings and Improvements.md",
+                "file": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Beacon - Findings and Improvements"
+              "title": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide)"
             }
           }
         ],
@@ -214,8 +214,8 @@
   },
   "active": "605610469d536cdd",
   "lastOpenFiles": [
-    "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
     "Beacon - Findings and Improvements.md",
+    "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
     "Untitled.base",
     "Welcome.md"
   ]

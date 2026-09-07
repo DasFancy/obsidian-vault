@@ -127,8 +127,3 @@ The Nordic anchor attests the VDF proof computed over `CommitDigest_e`. If nodes
 5. (Later) Upgrade AGREE intersection → tally + `COMMIT_FETCH` for higher participation.
 
 ---
-
-## 11. Test commands (reference)
-```bash
-# Baseline no-op (committee off)
-python3 main.py --local-test --crypto-profile post_quantum
