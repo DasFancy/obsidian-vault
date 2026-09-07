@@ -126,8 +126,11 @@ scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/results/20260906_151700_qrng_
 Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire data base, so it is better to pull only the .csv files. 
 
 ```
-mkdir -p ~/qbeacon_sat_results/base
-scp siddas@grenoble.iot-lab.info:'~/results/20260906_151700_qrng_n43_post_quantum_base/node-*/logs/node_0/metrics_n43_qrng*.csv' \
-  ~/qbeacon_sat_results/base/
-
+```bash
+for run in 20260906_151700_qrng_n43_post_quantum_base 20260906_155236_qrng_n43_post_quantum_rec_wh3 20260906_230450_qrng_n43_post_quantum_c15 20260906_234006_qrng_n43_post_quantum_c25; do
+  rsync -avz --include='*/' --include='*.csv' --exclude='*' \
+    siddas@grenoble.iot-lab.info:"~/results/*_${run}/" \
+    ~/qbeacon_sat_results/${run}/
+done
 ```
+
