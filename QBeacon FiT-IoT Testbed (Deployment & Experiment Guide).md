@@ -124,13 +124,17 @@ scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/results/20260906_151700_qrng_
 ```
 
 Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire data base, so it is better to pull only the .csv files. 
-
 ```
-```bash
-for run in 20260906_151700_qrng_n43_post_quantum_base 20260906_155236_qrng_n43_post_quantum_rec_wh3 20260906_230450_qrng_n43_post_quantum_c15 20260906_234006_qrng_n43_post_quantum_c25; do
-  rsync -avz --include='*/' --include='*.csv' --exclude='*' \
-    siddas@grenoble.iot-lab.info:"~/results/*_${run}/" \
-    ~/qbeacon_sat_results/${run}/
+for run in 20260906_151700_qrng_n43_post_quantum_base \
+           20260906_155236_qrng_n43_post_quantum_rec_wh3 \
+           20260906_230450_qrng_n43_post_quantum_c15 \
+           20260906_234006_qrng_n43_post_quantum_c25; do
+  ssh siddas@grenoble.iot-lab.info \
+    "cd ~/results/${run} && tar czf /tmp/${run}.tgz \$(find . -name 'metrics_*.csv')"
+  scp siddas@grenoble.iot-lab.info:/tmp/${run}.tgz ~/qbeacon_sat_results/
+  mkdir -p ~/qbeacon_sat_results/${run}
+  tar xzf ~/qbeacon_sat_results/${run}.tgz -C ~/qbeacon_sat_results/${run}/
 done
+
 ```
 
