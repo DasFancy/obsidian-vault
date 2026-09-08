@@ -127,3 +127,13 @@ The Nordic anchor attests the VDF proof computed over `CommitDigest_e`. If nodes
 5. (Later) Upgrade AGREE intersection → tally + `COMMIT_FETCH` for higher participation.
 
 ---
+
+## What actually went wrong in c15_wh3 — the tight-committee recovery trap [Important Findings]
+
+The root issue is a **conflict between committee dealing and the recovery threshold**. Here's the mechanism, traced through `epoch.py`:**1. You deal shares only to the committee.** At `COMMITTEE_SIZE=15`, the dealer sends Merkle shares to `receiver_ids = sorted(self._committee)` — only **15 nodes hold any share** of a given secret. Non-committee nodes hold nothing.**2. Recovery needs `t+1 = 15` valid shares.** `_recover_withheld` calls `collect_shares(min_shares=self.t + 1)`, and the Merkle path requires `len(valid_pairs) >= self.t + 1` = 15 before it can `MerkleVSS.reconstruct`.**3. The fatal squeeze:** committee size = 15, threshold = 15. So you need **every single committee member's share** to recover a withheld node. But:
+
+- The withheld node itself may be a committee member (it holds its own share, but it's withholding, so it won't serve it).
+- Any committee member that dropped/timed out (real FiT-IoT churn) removes a share.
+- `collect_shares` has a `RECONSTRUCTION_TIMEOUT=4s` window — slow members don't respond in time.
+
+**Result: you almost never get all 15.** That's why the CSV shows `n_recovered=0, n_withheld=2` on most epochs — recovery _tried_ and _failed_ because it could gather at most 14 shares.

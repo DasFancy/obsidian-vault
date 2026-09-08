@@ -112,7 +112,7 @@ done
 **To Kill Processes running on Nodes**
 
 ```
-for n in 1 3 4 5 8 9 10 16 17 18 19; do
+for n in 175 176 177 178 179 180 181 182 183 184 185 197 198 199 200 201 202 203 204 205 206 207 208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223 224 225 226 227 228; do
   ssh -o StrictHostKeyChecking=no root@node-a8-$n "pkill -f 'python3 main.py'" 2>/dev/null
 done
 ```
@@ -123,7 +123,7 @@ done
 scp -r siddas@grenoble.iot-lab.info:'~/QBeacon_Sat/results/20260906_151700_qrng_n43_post_quantum_base' ~/qbeacon_sat_results/
 ```
 
-Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire data base, so it is better to pull only the .csv files. 
+Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire log files, so it is better to pull only the .csv files. 
 ```
 for run in 20260906_151700_qrng_n43_post_quantum_base \
            20260906_155236_qrng_n43_post_quantum_rec_wh3 \
