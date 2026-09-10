@@ -239,6 +239,231 @@ At $t = 14$: $\mathsf{CommitBytes} = 576\,c + 32n$, i.e. $O(cn)$ versus $O(n^2 t
 
 ---
 
-## Appendix: Symbol Table
 
-| Sym
+# QBeacon — Post-Quantum Profile: Specification, Security Model, and Proofs
+
+> Companion to the classical-profile document. This note specifies the **post-quantum instantiation** (`CRYPTO_PROFILE = "post_quantum"`): **Merkle-tree VSS** replaces Feldman VSS, and the **MinRoot VDF** replaces Wesolowski. All definitions, theorems, and proofs are grounded in `epoch.py`, `metrics.py`, `main.py`. Theorems that are profile-independent are stated with a cross-reference; theorems that change are proven in full here.
+
+---
+
+## 0. Relationship to the Classical Profile
+
+The protocol is **profile-parametric**: one state machine (`BeaconEpoch.run()`) instantiated with different primitives, selected at construction time via `CRYPTO_PROFILE`. The security surface factors cleanly:
+
+| Theorem | Statement | Post-quantum status |
+|---|---|---|
+| **T1** Agreement / I6 | all honest nodes output identical $B_e$ | **holds verbatim** (hash + abstract-VSS only) |
+| **T2** Bias-resistance | $\le t$ adversary cannot bias $B_e$ | **holds under revised VDF assumption A4-Q** |
+| **T3** Committee determinism | identical $C_e$ | **holds verbatim** |
+| **T4** Recovery-threshold | recover iff margin $\ge t{+}1$ | **holds verbatim** (Merkle-VSS threshold) |
+| **T5** Chain integrity | tamper-evident chain | **holds verbatim** |
+
+Only **T2** carries a profile-dependent assumption, and only the **anchor** changes from *succinct proof* to *sampled audit*. Everything else is identical because the frozen transcript and the beacon binding are **hash-based** and agnostic to which VSS/VDF is used.
+
+---
+
+## 1. Notation (deltas from the classical profile)
+
+Let $p$ = `MINROOT_PRIME` (a large prime; the MinRoot field). Let $H$ = SHA3-256 (`HASH_ALGORITHM`), modeled as a random oracle. Threshold and committee are unchanged:
+$$
+t = \left\lfloor \tfrac{n-1}{3} \right\rfloor, \qquad k = t+1, \qquad t+1 \le c \le n.
+$$
+
+**Merkle-VSS commitment (public).** For a dealer $i$ with $c$ shares:
+$$
+V_i \;=\; \big(\mathsf{root}_i,\; n_{\text{shares}},\; k,\; \texttt{hash\_name}\big),
+$$
+where $\mathsf{root}_i$ is the Merkle root over the salted share-leaves (`merkle_share_vss_v1`, `_serialize_merkle_commitment`). This is the **only** public commitment — it contains no coefficients, no shares, no per-receiver salts.
+
+**Merkle-VSS share (private).** The package to receiver $j$:
+$$
+\pi_{i\to j} \;=\; \big(i,\; j,\; x_j,\; y_j,\; \mathsf{salt}_j,\; \mathsf{path}_j\big),
+$$
+with a Merkle authentication path $\mathsf{path}_j$ (`_serialize_merkle_share`). Verification `MerkleVSS.verify_share` recomputes the leaf $H(\mathsf{salt}_j \,\|\, x_j \,\|\, y_j)$ and checks $\mathsf{path}_j$ against $\mathsf{root}_i$.
+
+---
+
+## 2. Cryptographic Assumptions (post-quantum)
+
+**A1 (Random Oracle).** $H$ is a random oracle. *(Unchanged.)*
+
+**A2 (Commitment binding & hiding).** `Commit(e,i,s)` is binding and hiding. *(Unchanged — this is the per-node contribution commitment, hash-based in both profiles.)*
+
+**A3-Q (Merkle-VSS correctness, binding, secrecy).** The Merkle-share VSS satisfies:
+- **(i) correctness** — any $k=t+1$ shares whose $(x,y)$ verify against $\mathsf{root}_i$ reconstruct the dealt secret via Lagrange interpolation (`MerkleVSS.reconstruct`);
+- **(ii) binding** — under collision-resistance of $H$ (A1), $\mathsf{root}_i$ binds a fixed multiset of leaves $\{H(\mathsf{salt}_j \| x_j \| y_j)\}$; a dealer cannot present two distinct valid $(x_j, y_j)$ for the same $j$ without an $H$-collision, so any $t+1$ verified shares reconstruct the **same** secret;
+- **(iii) secrecy** — the shares are Shamir shares of a degree-$t$ polynomial, so any $\le t$ of them are information-theoretically independent of the secret; the salted Merkle leaves leak nothing further (RO).
+
+> **Contrast with classical A3.** Feldman binding rests on **discrete-log**; Merkle-VSS binding rests only on **hash collision-resistance** (A1). This is the source of the post-quantum claim: no algebraic hardness assumption vulnerable to Shor is used in the commit/VSS layer.
+
+**A4-Q (MinRoot sequentiality & uniqueness).** MinRoot over $\mathbb{F}_p$ (`MINROOT_T` iterations) satisfies:
+- **(i) sequentiality** — evaluating the MinRoot permutation for $T$ steps requires $\ge (1-\epsilon)T$ sequential field operations; each step computes a fifth-root (equivalently an inverse-power) that is inherently serial and not parallelizable, under the **iterated-root sequentiality assumption** in $\mathbb{F}_p$;
+- **(ii) uniqueness** — for fixed input $x$ and step count $T$, the output $\omega$ is unique (MinRoot is a permutation).
+
+> MinRoot's security rests on an **algebraic sequentiality assumption over a prime field**, not on factoring/RSA. It is the post-quantum delay primitive.
+
+**A5 (Synchronous reveal/recover window).** *(Unchanged.)* The reveal-plus-grace window (`REVEAL_WINDOW_SEC` + `RECONSTRUCTION_TIMEOUT + 2`) is long enough that all honest nodes reach the same reveal/recover decision per dealer $j \in A_e$.
+
+---
+
+## 3. The Protocol (post-quantum deltas)
+
+The state machine is identical to the classical profile:
+$$
+\textsf{IDLE} \to \textsf{COMMIT} \to \textsf{AGREE} \to \textsf{FREEZE} \to \textsf{DELAY} \to \textsf{REVEAL} \to \textsf{RECOVER} \to \textsf{FINALIZE}.
+$$
+Only the boxed rounds differ.
+
+### Round 1 — Commit *(Merkle-VSS, committee-scoped)*
+Node $i$ derives secret $s_i = \mathsf{Contribution}(e,i,r_i)$, commits $\gamma_i = \mathsf{Commit}(e,i,s_i)$, and runs Merkle-VSS **dealing only to the committee**:
+$$
+\texttt{receiver\_ids} = \mathsf{sort}(C_e), \qquad
+(V_i, \{\pi_{i\to j}\}_{j\in C_e}) = \mathsf{MerkleVSS.make\_shares}(s_i,\, c,\, t,\, e,\, i,\, C_e).
+$$
+It broadcasts $(\gamma_i, V_i)$ (public) and routes each $\pi_{i\to j}$ **only** to committee member $j$ (`share_map`). This is the **two-tier** step: per-dealer share cost is $O(c)$, not $O(n)$.
+
+### Round 2 — Agree
+Identical intersection rule (`agreed &= {...}`), but the per-dealer hash binds the **Merkle** public commitment:
+$$
+h_j \;=\; H\big(\gamma_j \,\|\, \bar V_j\big), \qquad \bar V_j = \texttt{json}(V_j;\ \text{sort\_keys}) \quad (\texttt{\_canonical\_public\_vss}).
+$$
+Since $\bar V_j$ is the canonicalized `merkle_share_vss_v1` dict (root + counts), the AGREE rule is byte-identical in structure to the classical case.
+
+### Round 3 — Freeze
+Identical. $\mathsf{CommitDigest}_e$ hashes $P_e$ (which now records `crypto_profile = "post_quantum"`, `delay_mode = "legacy:post_quantum:minroot"`, `delay_T = MINROOT_T`, `committee_size = c`, `committee = C_e`) and the sorted $\{(j, \gamma_j, \bar V_j)\}_{j\in A_e}$.
+
+### Round 4 — Delay *(MinRoot)*
+$$
+(\omega_e, \pi_e^{\text{MR}}) \;=\; \mathsf{MinRoot}\big(\mathsf{DelayInput}_e,\, T\big), \qquad T = \texttt{MINROOT\_T}.
+$$
+Evaluated on the frozen input, before reveal (`maybe_eval_vdf`, step 5b). **The anchor dispatch (step 5c) does NOT fire in this profile** in the current implementation — the gate is `CRYPTO_PROFILE == "classical"`. Post-quantum anchoring uses the sampled-audit scheme of §6.
+
+### Round 5 — Reveal & Recover *(Merkle-share reconstruction)*
+Withheld dealer $j$ is recovered by collecting $\ge t+1$ share packages, each of which must (a) match `dealer_id = j`, (b) have distinct $x$, (c) pass `MerkleVSS.verify_share` against $\mathsf{root}_j$; then $s_j = \mathsf{MerkleVSS.reconstruct}(\{(x,y)\}_{t+1})$, re-checked to re-open $\gamma_j$ via `verify_contribution` (`_recover_withheld`, Merkle branch).
+
+### Round 6 — Output
+Identical binding (`derive_beacon_output_v2`):
+$$
+B_e = H\big(\texttt{"bind"} \,\|\, e \,\|\, B_{e-1} \,\|\, \mathsf{CommitDigest}_e \,\|\, \eta_e \,\|\, \texttt{delay\_mode} \,\|\, \omega_e\big).
+$$
+
+---
+
+## 4. Theorems (post-quantum)
+
+### Theorem T1-Q (Agreement / I6)
+Under **A1, A2, A3-Q, A5**, all honest nodes output identical $B_e$.
+
+**Proof.** Identical in structure to the classical T1; the only profile-dependent step is Step 3 (identity of $\{(j,\gamma_j,\bar V_j)\}$). Here $\bar V_j = \texttt{json}(V_j; \text{sort\_keys})$ where $V_j$ is the Merkle commitment `{root, n_shares, threshold_k, hash_name}`. By A3-Q-(ii), a dealer surviving the intersection-AGREE presents a **single** $\mathsf{root}_j$ (equivocation on the root produces a distinct $h_j$ and is dropped by the matching-hash intersection). Hence all honest nodes hold byte-identical $\bar V_j$, the sorted serialization is identical, $\mathsf{CommitDigest}_e$ is identical, and by A4-Q-(ii) $\omega_e$ is identical. Steps 1, 2, 4, 5 are hash/VSS-generic and carry over unchanged. $\blacksquare$
+
+> **Empirical witness.** I6 = PASS (byte-identical `beacon_output_hex` across all 43 nodes, every epoch) on **all** post-quantum N=43 runs — this is the *primary* validated profile.
+
+---
+
+### Theorem T2-Q (Bias-resistance under MinRoot)
+Under **A1, A2, A3-Q, A4-Q, A5**, an adversary corrupting $\le t$ nodes cannot bias $B_e$ beyond a detectable abort, provided $\ge 1$ honest contribution survives in $R_e$.
+
+**Proof (sketch).**
+
+**(i) Adaptive-choice bias — defeated by freeze-before-delay + MinRoot sequentiality.** The MinRoot evaluation runs on $\mathsf{DelayInput}_e$, fixed at Round 3, *before any reveal* (step 5b precedes step 6). By A4-Q-(i), $\omega_e$ cannot be computed until $\ge (1-\epsilon)T$ sequential field steps after the freeze. All contribution commitments $\gamma_i$ are binding (A2) at freeze time. Thus the adversary commits $s_i$ before it can know $\omega_e$, and cannot correlate its contribution with the output. In the RO model, given any unpredicted honest $s_j \in R_e$:
+$$
+B_e = H(\cdots \| \eta_e \| \cdots) \;\overset{d}{\approx}\; \mathsf{Uniform}\{0,1\}^{256}.
+$$
+
+**(ii) Selective-withholding bias — defeated by Merkle-VSS recovery.** A committed $s_j$ cannot be erased: by A3-Q-(i) the honest committee reconstructs $s_j$ from $t+1$ verified Merkle shares, provided the responsive committee margin meets the threshold (Theorem T4-Q). If recovery succeeds, $s_j$ is included regardless of the adversary; if it fails, $j$ is deterministically dropped at all honest nodes (T1-Q + A5), yielding entropy loss but **no bias**. $\blacksquare$
+
+> **Assumption boundary (state explicitly in the paper).** T2-Q's unpredictability rests on the **MinRoot iterated-root sequentiality assumption (A4-Q-i)**, which is *less classically established* than RSA-group sequentiality. This is the honest cost of post-quantum positioning: the delay is Shor-resistant but relies on a newer algebraic assumption.
+
+---
+
+### Theorem T3-Q (Committee determinism)
+Under **A1**, $C_e$ is identical across honest nodes and independent of adversarial behavior in epoch $e$.
+
+**Proof.** Identical to classical T3: $C_e$ is the $c$ lowest-$\mathsf{rank}$ nodes under $\mathsf{rank}(i)=H(\sigma_e \| i)$, $\sigma_e = H(\texttt{"...COMMITTEE\_SELECT/v2"} \| e)$, depending only on $e$. $\blacksquare$
+
+> **Design remark (unchanged).** $\sigma_e$ deliberately **excludes** $B_{e-1}$ to prevent cascade desync (divergent $B_{e-1} \Rightarrow$ divergent $C_e \Rightarrow$ scattered shares $\Rightarrow$ permanent desync, observed in early testing). Restoring beacon-seeded rotation is safe only after AGREE guarantees per-epoch agreement.
+
+---
+
+### Theorem T4-Q (Recovery-threshold — committee-margin lemma)
+Let $f_C$ = number of committee members unresponsive during the recovery window. Recovery of withheld dealer $j$ succeeds iff
+$$
+\boxed{\,c \;-\; f_C \;-\; [\,j \in C_e\,] \;\ge\; t+1\,}.
+$$
+At the minimum committee $c = t+1$, recovery fails whenever any committee share-holder is unresponsive or is $j$ itself.
+
+**Proof.** Merkle shares of $s_j$ exist only on $C_e$ (Round 1 routes only to $C_e$). Reconstruction requires $t+1$ **distinct-$x$, root-verified** shares (`len(valid_pairs) >= self.t + 1`, with `MerkleVSS.verify_share`). The available pool is $C_e \setminus (\text{unresponsive}) \setminus \{j \text{ if } j\in C_e\}$; success iff $\ge t+1$. $\blacksquare$
+
+**Corollary T4.1-Q (design rule).** Choose $c \ge t+1+\phi$, $\phi$ bounding expected committee churn.
+
+> **Empirical witness (two-point proof, both post-quantum).** At $N=43$, $t=14$, 3 withheld nodes:
+> - $c = t+1 = 15$ ($\phi=0$): recovery of the withheld set succeeded in only $\approx 14\%$ of epochs ($\overline{n_{\text{rec}}} = 0.56$).
+> - $c = 25$ ($\phi=10$): recovery succeeded on **every** epoch ($n_{\text{withheld}}=0$ on all 50 epochs, $\overline{n_{\text{rec}}}=4.70$; `metrics_n43_qrng_post_quantum.csv`).
+
+---
+
+### Theorem T5-Q (Chain integrity)
+Under **A1**, altering any $B_{e'}$ (or its $\mathsf{CommitDigest}_{e'}$, entropy set, or $\omega_{e'}$) changes all $B_e$, $e \ge e'$, except with negligible probability.
+
+**Proof.** Identical to classical T5 — pure hash chain via $B_{e-1}$ inclusion; A1 collision-resistance. $\blacksquare$
+
+---
+
+## 5. Complexity (post-quantum)
+
+**Communication (per node, per epoch).** Each dealer sends: contribution commitment (32 B) + public Merkle commitment (32 B root) + one Merkle share per committee receiver, each share carrying $(x,y,\mathsf{salt},\mathsf{path})$ with path length $\approx \log_2 c$ (modeled as $64 + t\cdot 32$ B in `metrics.py`), plus the public root broadcast. Aggregated over the $n$ dealers a node hears:
+$$
+\mathsf{CommitBytes} \;=\; \big(32 + 32 + (64 + t\cdot 32)\big)\cdot c \;+\; 32\,n \;=\; 576\,c + 32n \quad (t{=}14).
+$$
+
+| $c$ | $\mathsf{CommitBytes}$ (bytes) |
+|----:|-------------------------------:|
+| $15$  | $10016$ |
+| $25$  | $15776$ |
+| $43$  | $26144$ |
+
+This is $O(cn)$, versus $O(n^2 t)$ for all-to-all dealing ($c=n$).
+
+> **Model caveat.** $\mathsf{CommitBytes}$ is **analytical** (computed from `committee_size` in `metrics.py`), not wire-measured. **T1-Q determinism and T4-Q recovery are empirical**; bandwidth is a derived model. The Merkle-path term $t\cdot 32$ is an upper-bound approximation; the true path is $\lceil \log_2 c \rceil$ hashes.
+
+**Rounds.** $O(1)$ synchronous rounds + one MinRoot delay epoch of wall-time $\Theta(T)$.
+
+> **Empirical delay.** Recorded MinRoot evaluation is $\overline{\texttt{vdf\_eval\_ms}} \approx 10.2\text{–}10.4\,\text{s}$ across all N=43 runs, i.e. **$T = 4096$** (the `run_variety.sh` `MINROOT_T=1024` export did not propagate to nodes; `run_experiment.sh` step 3 fell back to `MINROOT_T=${MINROOT_T:-4096}`). Report the post-quantum delay parameter as **$T = 4096$**.
+
+---
+
+## 6. The Post-Quantum Anchor: Sampled Elapsed-Work Audit
+
+MinRoot admits **no native succinct proof** of elapsed work (unlike Wesolowski, whose $(\pi, \ell, r)$ verifies in $O(\log T)$). The post-quantum anchor therefore performs a **sampled hardware audit** of sequential execution — *not* a succinct proof.
+
+**Prover (on the A8 node):**
+1. Evaluate MinRoot for $T$ steps, recording $O(\sqrt T)$ (or fixed-stride) checkpoint states.
+2. Merkle-commit the checkpoint vector → one root $\rho$ (32 B). *(Same Merkle-commitment technique as the VSS layer — succinct commitment to the trace.)*
+3. Derive non-interactive challenges (Fiat–Shamir):
+$$
+\{i_1, \dots, i_k\} \;=\; H\big(\mathsf{DelayInput}_e \,\|\, \rho \,\|\, \omega_e\big).
+$$
+4. Open, for each challenge $i_m$, the bracketing checkpoints + Merkle paths.
+
+**Verifier (on the Nordic MCU, in C):**
+1. Verify each opened checkpoint against $\rho$ ($k \cdot \lceil\log(\#\text{checkpoints})\rceil$ hashes — no big-int, no pairings).
+2. Verify the **local MinRoot step relation** between bracketing checkpoints (a bounded number of $\mathbb{F}_p$ operations, 256-bit modmul — fits nRF flash/RAM).
+3. Re-derive $\{i_m\}$ from $H(\mathsf{DelayInput}_e \| \rho \| \omega_e)$ and confirm the openings match (prevents adversarial challenge selection).
+4. Return $(\texttt{PASS/FAIL}, \mu s)$ → CSV `anchor_verify_pass`, `anchor_verify_us`.
+
+**Soundness.** If a fraction $\varepsilon$ of the trace segments is inconsistent, then for $k$ independent challenges:
+$$
+\Pr[\text{cheat undetected}] \;=\; (1-\varepsilon)^k.
+$$
+This is **audit-based elapsed-work evidence** with tunable soundness (increase $k$), bound to $\mathsf{DelayInput}_e$ so a PASS certifies *this epoch*.
+
+> **Honest claim.** Classical anchor = **succinct cryptographic proof** verification ($\pi^\ell x^r \equiv y \pmod N$). Post-quantum anchor = **sampled sequential-execution audit**, soundness $(1-\varepsilon)^k$. Full post-quantum succinctness (a folding/SNARK proof over the MinRoot circuit) is stated as **future work**.
+
+---
+
+## 7. What Is Proven vs. Assumed (post-quantum honesty statement)
+
+- **Proven under A1, A2, A3-Q, A5 (hash + Merkle-VSS only, NO discrete-log / NO factoring):** T1-Q (Agreement/I6), T3-Q (Committee determinism), T4-Q (Recovery-threshold), T5-Q (Chain integrity).
+- **T2-Q (Bias-resistance)** additionally requires **A4-Q (MinRoot iterated-root sequentiality)** — a newer algebraic assumption over $\mathbb{F}_p$, the post-quantum cost.
+- **A5 (syn
+
