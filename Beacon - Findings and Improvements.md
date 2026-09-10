@@ -137,3 +137,5 @@ The root issue is a **conflict between committee dealing and the recovery thres
 - `collect_shares` has a `RECONSTRUCTION_TIMEOUT=4s` window — slow members don't respond in time.
 
 **Result: you almost never get all 15.** That's why the CSV shows `n_recovered=0, n_withheld=2` on most epochs — recovery _tried_ and _failed_ because it could gather at most 14 shares.
+
+
