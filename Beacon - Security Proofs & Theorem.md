@@ -463,7 +463,90 @@ This is **audit-based elapsed-work evidence** with tunable soundness (increase $
 
 ## 7. What Is Proven vs. Assumed (post-quantum honesty statement)
 
-- **Proven under A1, A2, A3-Q, A5 (hash + Merkle-VSS only, NO discrete-log / NO factoring):** T1-Q (Agreement/I6), T3-Q (Committee determinism), T4-Q (Recovery-threshold), T5-Q (Chain integrity).
-- **T2-Q (Bias-resistance)** additionally requires **A4-Q (MinRoot iterated-root sequentiality)** — a newer algebraic assumption over $\mathbb{F}_p$, the post-quantum cost.
-- **A5 (syn
+- **Proven under A1, A2, A3-Q, A5 — hash + Merkle-VSS only, NO discrete-log, NO factoring:**
+  **T1-Q** (Agreement / I6), **T3-Q** (Committee determinism), **T4-Q** (Recovery-threshold), **T5-Q** (Chain integrity). These rely solely on the random-oracle hash structure (A1), commitment binding/hiding (A2), and the abstract $(t{+}1)$-threshold Merkle-VSS interface (A3-Q). **This is the core post-quantum claim: the agreement, committee, recovery, and chain guarantees carry no assumption vulnerable to Shor-type quantum attack.**
+
+- **T2-Q (Bias-resistance)** additionally requires **A4-Q (MinRoot iterated-root sequentiality)** over $\mathbb{F}_p$ — a newer algebraic assumption, not reducible to hashing. This is the honest cost of post-quantum delay: the unpredictability guarantee rests on MinRoot sequentiality, which is less classically studied than RSA-group sequentiality. **State this assumption boundary explicitly in the paper.**
+
+- **A5 (synchrony)** is the load-bearing timing assumption. The protocol targets a **synchronous reveal/recover window** (`REVEAL_WINDOW_SEC` + grace `RECONSTRUCTION_TIMEOUT + 2`, per `epoch.py`). **No asynchronous safety is claimed.** Empirical support: I6 = PASS on **all** N=43 post-quantum runs (byte-identical `beacon_output_hex` every epoch).
+
+- **Anchor verification is a SAMPLED AUDIT, not a succinct proof (post-quantum).** Unlike the classical Wesolowski anchor (which admits $O(\log T)$ succinct verification $\pi^\ell x^r \equiv y \pmod N$), MinRoot has no native succinct proof. The post-quantum anchor performs a Merkle-committed, Fiat–Shamir-challenged, $k$-sample audit of sequential execution with soundness error
+$$
+\Pr[\text{cheat undetected}] = (1-\varepsilon)^k,
+$$
+bound to $\mathsf{DelayInput}_e$. **Describe this as audit-based elapsed-work evidence with tunable soundness**, and cite folding/SNARK-over-MinRoot (e.g. a Nova-style proof) as the path to full post-quantum succinctness — **explicitly future work.**
+
+- **In the current implementation the post-quantum anchor does NOT fire:** `_dispatch_anchor` is gated `CRYPTO_PROFILE == "classical"` (`epoch.py`), and the post-quantum CSV records `anchor_verify_pass = -1`, `anchor_verify_us = -1` (`metrics_n43_qrng_post_quantum.csv`). Removing this gate and implementing the §6 audit is the anchor-integration task; the *protocol* proofs above hold independently of the anchor (the anchor is post-finalize attestation only and never alters $B_e$).
+
+- **Bandwidth (§5) is an ANALYTICAL model**, computed from `committee_size` in `metrics.py` — **not** wire-measured. T1-Q determinism and T4-Q recovery are **empirical**; the Merkle-path term $t\cdot 32$ over-approximates the true $\lceil \log_2 c \rceil$ hashes.
+
+- **Empirical delay parameter is $T = 4096$** (recorded `vdf_eval_ms ≈ 10.2$–$10.4$ s across all runs), not the $T = 1024$ intended by `run_variety.sh`: the `export MINROOT_T=1024` did not propagate through `run_experiment.sh` step 3's `MINROOT_T=${MINROOT_T:-4096}` fallback (only `COMMITTEE_SIZE`/`WITHHOLD_NODES` were passed via `env "$@"`). **Report the post-quantum delay as $T = 4096$.**
+
+- **⚠️ Data-provenance note for the uploaded run.** The CSV `metrics_n43_qrng_post_quantum.csv` reports `commit_bytes_sent = 15776`, which by the §5 model $576c + 32n$ (at $t=14$, $n=43$) implies **committee size $c = 25$**, and the recovery trace is clean ($n_{\text{withheld}} = 0$ every epoch, $\overline{n_{\text{rec}}} = 4.70$). However, `run_variety.sh` invoked this run with tag `c15_wh3` and `COMMITTEE_SIZE=15` (which would give $10016$). **Resolve this tag-vs-data discrepancy before citing $c$**, since Corollary T4.1-Q's two-point argument (fragile at $c=t+1$, reliable at $c>t+1$) depends on which committee actually ran. The clean $n_{\text{withheld}}=0$ behavior is consistent with $c=25$, not $c=15$.
+
+---
+
+## 8. Summary Table — Assumption Dependence
+
+| Theorem                        | RO (A1) | Commit (A2) | VSS (A3-Q) | VDF (A4-Q) | Sync (A5) | Shor-safe? |
+| ------------------------------ | :-----: | :---------: | :--------: | :--------: | :-------: | :--------: |
+| **T1-Q** Agreement / I6        |    ✔    |      ✔      |     ✔      |     —      |     ✔     |  **Yes**   |
+| **T2-Q** Bias-resistance       |    ✔    |      ✔      |     ✔      |     ✔      |     ✔     |    Yes*    |
+| **T3-Q** Committee determinism |    ✔    |      —      |     —      |     —      |     —     |  **Yes**   |
+| **T4-Q** Recovery-threshold    |    ✔    |      ✔      |     ✔      |     —      |     ✔     |  **Yes**   |
+| **T5-Q** Chain integrity       |    ✔    |      —      |     —      |     —      |     —     |  **Yes**   |
+
+\* T2-Q is post-quantum *provided* the MinRoot iterated-root sequentiality assumption (A4-Q) holds; this is the sole non-hash assumption in the post-quantum profile.
+
+---
+
+## Appendix A: Symbol Table
+
+| Symbol | Meaning | Code reference |
+|---|---|---|
+| $n$ | number of nodes | `self.n = len(all_node_ids)` |
+| $t$ | fault/corruption threshold, $\lfloor (n{-}1)/3 \rfloor$ | `self.t = (self.n - 1) // 3` |
+| $k = t+1$ | reconstruction threshold | `threshold_k` |
+| $c$ | committee size, $t{+}1 \le c \le n$ | `_committee_size`, `COMMITTEE_SIZE` |
+| $C_e$ | committee for epoch $e$ | `_select_committee` |
+| $\sigma_e$ | committee seed $= H(\texttt{"...v2"} \| e)$ | `_select_committee` |
+| $H$ | SHA3-256 random oracle | `HASH_ALGORITHM` |
+| $p$ | MinRoot field prime | `MINROOT_PRIME` |
+| $\mathbb{F}_p$ | Shamir / MinRoot field | `ShamirSharing.P` |
+| $r_i$ | node $i$'s raw QRNG entropy | `entropy_src.get_entropy` |
+| $s_i$ | canonical field contribution | `Commitment.contribution_from_raw` |
+| $\gamma_i$ | contribution commitment | `Commitment.commit_contribution` |
+| $V_i$ | public Merkle-VSS commitment | `_serialize_merkle_commitment` |
+| $\rho_i / \mathsf{root}_i$ | Merkle root of share vector | `MerkleVSSCommitment.root` |
+| $\pi_{i\to j}$ | private share package to $j$ | `_serialize_merkle_share` |
+| $A_e$ | intersection-agreed dealer set | AGREE block in `run()` |
+| $P_e$ | canonical parameter header | `_canonical_params` |
+| $\mathsf{CommitDigest}_e$ | frozen commit transcript hash | `_freeze_commit_transcript` |
+| $\mathsf{DelayInput}_e$ | delay function input | `_derive_delay_input` |
+| $T$ | delay step count | `MINROOT_T` / `delay_T` |
+| $\omega_e$ | delay output | `_delay_output` |
+| $\eta_e$ | entropy digest over $R_e$ | `hash_entropy_by_node` |
+| $R_e$ | contributor set (revealed ∪ recovered) | `contributors` |
+| $B_e$ | beacon output for epoch $e$ | `derive_beacon_output_v2` |
+| $f_C$ | unresponsive committee members | (recovery-window churn) |
+| $\varepsilon$ | fraction of inconsistent trace segments | §6 audit |
+| $k$ | number of audit challenges | §6 audit |
+
+---
+
+## Appendix B: Profile Diff (classical ↔ post-quantum)
+
+| Layer | Classical | Post-quantum |
+|---|---|---|
+| VSS | Feldman ($g^{a_k}$) | Merkle-tree ($\mathsf{root}$) |
+| VSS binding | discrete-log | hash collision-resistance (A1) |
+| Public commitment | list of group elements | one 32-byte root + counts |
+| VDF | Wesolowski (RSA group) | MinRoot ($\mathbb{F}_p$) |
+| VDF assumption | RSA / low-order (A4-C) | iterated-root sequentiality (A4-Q) |
+| Anchor | succinct proof $\pi^\ell x^r \equiv y$ | sampled audit, soundness $(1-\varepsilon)^k$ |
+| Shor-vulnerable? | **Yes** (factoring/DLog) | **No** (hash) except A4-Q delay |
+| Selected by | `CRYPTO_PROFILE="classical"` | `CRYPTO_PROFILE="post_quantum"` |
+
+> **One-line thesis.** The post-quantum profile removes every factoring/discrete-log dependency from the *agreement, committee, recovery, and chain* guarantees (T1-Q, T3-Q, T4-Q, T5-Q proven under hashing alone), leaving a single, clearly-stated algebraic assumption (MinRoot sequentiality, A4-Q) for the *delay/unpredictability* guarantee (T2-Q) — with the anchor providing a tunable-soundness sampled audit of that delay.
+
 
