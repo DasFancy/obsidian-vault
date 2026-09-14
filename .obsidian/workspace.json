@@ -69,12 +69,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Beacon - Security Proofs & Theorem.md",
+                "file": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Beacon - Security Proofs & Theorem"
+              "title": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide)"
             }
           }
         ],
@@ -256,11 +256,11 @@
   },
   "active": "1e8179fab48074d2",
   "lastOpenFiles": [
-    "Beacon - Findings and Improvements.md",
-    "Beacon - Security Proofs & Theorem.md",
     "Nordic Integration (Anchor).md",
-    "IEEE Aersopace Relevant Papers.md",
     "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
+    "Beacon - Security Proofs & Theorem.md",
+    "Beacon - Findings and Improvements.md",
+    "IEEE Aersopace Relevant Papers.md",
     "A \"competitive\" DRB protocol.md",
     "Untitled.base",
     "Welcome.md"
