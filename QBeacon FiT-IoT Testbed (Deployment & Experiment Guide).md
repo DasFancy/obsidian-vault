@@ -125,10 +125,7 @@ scp -r siddas@grenoble.iot-lab.info:'~/results/20260914_161334_qrng_n4_post_quan
 
 Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire log files, so it is better to pull only the .csv files. 
 ```
-for run in 20260906_151700_qrng_n43_post_quantum_base \
-           20260906_155236_qrng_n43_post_quantum_rec_wh3 \
-           20260906_230450_qrng_n43_post_quantum_c15 \
-           20260906_234006_qrng_n43_post_quantum_c25; do
+for run in 20260916_154410_qrng_n21_post_quantum_pq_anchor_rtt_test_2; do
   ssh siddas@grenoble.iot-lab.info \
     "cd ~/results/${run} && tar czf /tmp/${run}.tgz \$(find . -name 'metrics_*.csv')"
   scp siddas@grenoble.iot-lab.info:/tmp/${run}.tgz ~/qbeacon_sat_results/
@@ -420,7 +417,7 @@ NODES="30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50"
 
 bash run_experiment.sh \
   --mode qrng \
-  --epochs 2 \
+  --epochs 30 \
   --nodes "$NODES" \
   --crypto-profile post_quantum \
   --anchor-node 0 \
