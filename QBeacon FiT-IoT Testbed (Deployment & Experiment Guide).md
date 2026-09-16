@@ -53,7 +53,7 @@ After the new migration of A8 Grenoble nodes in August, the "rsync" hasn't been 
 **Step 2.2 - Run deploy.sh from frontend**
 The initial "tar" is to merely upload the entire working directory to the frontend of FitIoT. Afterwards, one must deploy the code directly to the nodes. "deploy.sh" basically takes care of it all: cleaning nodes, rsyncs/tar code, installs dependencies, and then verifies: 
 ```
-bash deploy.sh 1 2 3 4 5 7 8 9 10 11 12 13 14 15 16
+bash deploy.sh 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50
 ```
 
 **Step 2.3 - Verify Deployment**
@@ -290,10 +290,13 @@ cd ~/QBeacon_Sat/network
 ```
 
 ```
-python3 -u anchor_tcp_gateway.py  
---serial /dev/ttyACM0  
---listen-host 127.0.0.1  
---listen-port 9100
+ANCHOR_GATEWAY_LOG=~/qbeacon_anchor_gateway_test_$(date +%Y%m%d_%H%M%S).jsonl \
+python3 -u anchor_tcp_gateway.py \
+  --serial /dev/ttyACM0 \
+  --listen-host 127.0.0.1 \
+  --listen-port 9100 \
+  --chunk-size 16 \
+  --chunk-delay 0.001
 ```
 Keep this terminal open.
 
@@ -412,7 +415,8 @@ bash
 ```bash
 cd ~/QBeacon_Sat
 
-NODES="2 3 4 5"
+NODES="30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50"
+./anchor_tunnel.sh
 
 bash run_experiment.sh \
   --mode qrng \
@@ -427,7 +431,11 @@ bash run_experiment.sh \
   --uart-chunk 16 \
   --uart-delay 0.001 \
   --epoch-sec 12 \
-  --tag pq_anchor_tcp_test
+  --tag pq_anchor_rtt_test
+
 ```
 
-This is the correct invocation because `run_experiment.sh` parses `--anchor-tcp`, stores it in `ANCHOR_TCP`, and forwards it only to the selected logical anchor node. Non-anchor nodes receive no `ANCHOR_TCP` or `ANCHOR_PORT` through `ANCHOR_ENV` 
+This is the correct invocation because `run_experiment.sh` parses `--anchor-tcp`, stores it in `ANCHOR_TCP`, and forwards it only to the selected logical anchor node. Non-anchor nodes receive no `ANCHOR_TCP` or `ANCHOR_PORT` through `ANCHOR_ENV` 
+
+**While using the anchor_tunnel.sh make sure that the first node is pointed to the device properly. I made the script more general but this is a point to note that if I change node ordering randomly for example, if the inital node is 30, instead of 2, the IP should be redirected properly !! **
+
