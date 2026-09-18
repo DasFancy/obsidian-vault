@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Experimentation Checklist.md",
+                "file": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Experimentation Checklist"
+              "title": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide)"
             }
           }
         ],
@@ -215,6 +215,40 @@
               "icon": "git-pull-request",
               "title": "Source Control"
             }
+          },
+          {
+            "id": "d9f03c09d38980fe",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "fedae7c43633ba3d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
           }
         ],
         "currentTab": 3
@@ -237,8 +271,8 @@
   },
   "active": "e885fe21c2a2e271",
   "lastOpenFiles": [
-    "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
     "Experimentation Checklist.md",
+    "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
     "Nordic Integration (Anchor).md",
     "Beacon - Security Proofs & Theorem.md",
     "Beacon - Findings and Improvements.md",
