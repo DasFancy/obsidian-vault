@@ -21,7 +21,7 @@ iotlab-auth -u YOUR_USERNAME
 **Step 1 - Reserve Nodes**
 Submit reservation requests to reserve specific A8 nodes to deploy the protocol. A standard reservation looks as follows: 
 ```
-iotlab-experiment submit -n qrng_run -d 280 -l grenoble,a8,1-5+7-12
+iotlab-experiment submit -n qrng_run -d 280 -l grenoble,a8,122-131+197-212+214-228
 ```
 
 One can check the status of the nodes with the following code: 
@@ -49,6 +49,11 @@ scp qbeacon.tgz siddas@grenoble.iot-lab.info:~/
 ssh siddas@grenoble.iot-lab.info "cd ~ && tar xzf qbeacon.tgz && rm qbeacon.tgz && ls QBeacon_Sat/main.py"
 ```
 
+While only uploading single file do from the local system: 
+```
+scp ~/QBeacon_Sat/run_experiment.sh \
+  siddas@grenoble.iot-lab.info:~/QBeacon_Sat/run_experiment.sh
+```
 After the new migration of A8 Grenoble nodes in August, the "rsync" hasn't been functioning within the specific A8 nodes. Another alternative was using "tar."
 **Step 2.2 - Run deploy.sh from frontend**
 The initial "tar" is to merely upload the entire working directory to the frontend of FitIoT. Afterwards, one must deploy the code directly to the nodes. "deploy.sh" basically takes care of it all: cleaning nodes, rsyncs/tar code, installs dependencies, and then verifies: 

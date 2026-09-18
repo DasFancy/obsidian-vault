@@ -1,0 +1,24 @@
+- [ ] Phase 1 — Reproducibility baseline
+- [ ] Phase 2 — Anchor-on versus anchor-off comparison
+- [ ] Phase 3 — Epoch-duration sensitivity
+- [ ] Phase 4 — Node-scaling study
+- [ ] Phase 5 — Committee-size scaling
+- [ ] Phase 6 — Withholding and recovery experiments
+- [ ] Phase 7 — AGREE/intersection stress tests
+- [ ] Phase 8 — MinRoot parameter sweep
+- [ ] Phase 9 — UART and gateway robustness
+- [ ] Phase 10 — Classical, post-quantum, and hybrid comparison
+- [ ] Phase 11 — Entropy-source study
+- [ ] Phase 12 — Long-run soak tests
+- [ ] Phase 13 — Negative and malformed-anchor tests
+- [ ] Phase 14 — Node failure and late-join tests
+- [ ] Phase 15 — Security-invariant checks: 
+- I1 — Output agreement: For each epoch: distinct beacon_output_hex across all present nodes == 1
+- I2 — Strict completeness: For each epoch:   number of node rows == n
+- I3 — Anchor locality: Only logical anchor node should have anchor_verify_pass != -1
+- I4 — Anchor non-interference: beacon_output must be finalized before anchor dispatch
+- I5 — Frozen transcript consistency: AGREE set must be common enough to preserve output agreement.
+- I6 — Recovery correctness: Recovered entropy must verify against original commitment.
+- I7 — Chain binding: Each epoch should bind previous beacon, commit digest, entropy digest, delay mode, and delay output.
+
+- [ ] Phase 16 — Data to download and archive for every run
