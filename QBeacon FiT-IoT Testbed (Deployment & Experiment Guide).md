@@ -292,13 +292,13 @@ cd ~/QBeacon_Sat/network
 ```
 
 ```
-ANCHOR_GATEWAY_LOG=~/qbeacon_anchor_gateway_test_$(date +%Y%m%d_%H%M%S).jsonl \
-python3 -u anchor_tcp_gateway.py \
-  --serial /dev/ttyACM0 \
-  --listen-host 127.0.0.1 \
-  --listen-port 9100 \
-  --chunk-size 16 \
-  --chunk-delay 0.001
+```bash
+cd ~/Work/QBeacon_Sat/network
+python3 -u anchor_tcp_gateway.py --serial /dev/ttyACM0 \
+  --listen-host 127.0.0.1 --listen-port 9100 \
+  --chunk-size 16 --chunk-delay 0.003 --serial-timeout 120 \
+  |& tee ~/hd_stress_gateway.log
+```
   
   
 ```
@@ -324,6 +324,22 @@ Run on the local PC:
 ssh -N -o ExitOnForwardFailure=yes \
   -R 19100:127.0.0.1:9100 \
   siddas@grenoble.iot-lab.info
+	  
+	  OR
+	  
+
+
+ssh -N -T \
+  -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=120 \
+  -o TCPKeepAlive=yes \
+  -o ConnectTimeout=15 \
+  -o Compression=no \
+  -R 127.0.0.1:19100:127.0.0.1:9100 \
+  siddas@grenoble.iot-lab.info
+ 
+
   
   Longer Tunnel
   
