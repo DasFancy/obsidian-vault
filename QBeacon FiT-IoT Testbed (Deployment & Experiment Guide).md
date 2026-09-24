@@ -299,6 +299,8 @@ python3 -u anchor_tcp_gateway.py \
   --listen-port 9100 \
   --chunk-size 16 \
   --chunk-delay 0.001
+  
+  
 ```
 Keep this terminal open.
 
@@ -322,6 +324,27 @@ Run on the local PC:
 ssh -N -o ExitOnForwardFailure=yes \
   -R 19100:127.0.0.1:9100 \
   siddas@grenoble.iot-lab.info
+  
+  Longer Tunnel
+  
+  while true; dodo
+  echo "[anchor-tunnel] starting $(date)"
+
+  ssh -N -T \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=120 \
+    -o TCPKeepAlive=yes \
+    -o ConnectTimeout=15 \
+    -o Compression=no \
+    -o BatchMode=yes \
+    -R 127.0.0.1:19100:127.0.0.1:9100 \
+    siddas@grenoble.iot-lab.info
+
+  echo "[anchor-tunnel] dropped $(date), restarting in 5s"
+  sleep 5
+done
+
 ```
 
 Keep this terminal open. This creates:
