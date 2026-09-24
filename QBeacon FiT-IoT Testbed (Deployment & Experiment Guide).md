@@ -473,6 +473,19 @@ bash run_experiment.sh \
   --uart-delay 0.001 \
   --epoch-sec 12 \
   --tag pq_anchor_rtt_test
+  
+  or 
+  
+bash
+EPOCH_SEC=120 \
+ANCHOR_ASYNC=0 \
+MONITOR_SEC_PER_EPOCH=300 \
+BEACON_NET_PREFIX=10.0.12 \
+ANCHOR_TCP="127.0.0.1:29100" \
+RUN_SUITE=rerun9 \
+EPOCHS=50 \
+bash run_variety.sh 2>&1 | tee ~/rerun9_$(date +%Y%m%d_%H%M).log
+
 
 ```
 
