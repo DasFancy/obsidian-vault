@@ -51,8 +51,8 @@ ssh siddas@grenoble.iot-lab.info "cd ~ && tar xzf qbeacon.tgz && rm qbeacon.tgz 
 
 While only uploading single file do from the local system: 
 ```
-scp ~/QBeacon_Sat/beacon_core/epoch.py \
-  siddas@grenoble.iot-lab.info:~/QBeacon_Sat/beacon_core/epoch.py
+scp ~/QBeacon_Sat/network/transport.py \
+  siddas@grenoble.iot-lab.info:~/QBeacon_Sat/network/transport.py
 ```
 After the new migration of A8 Grenoble nodes in August, the "rsync" hasn't been functioning within the specific A8 nodes. Another alternative was using "tar."
 **Step 2.2 - Run deploy.sh from frontend**
@@ -99,6 +99,14 @@ cd ~/QBeacon && bash deploy.sh 1 2 3 4 5 7 8 9 10
 ```bash
 export NODES="7 8 9 10 11 12 13 14 15 16 17 44 45 46 47 48 49 50 51 52 53 54 122 123 124 125 126 127 128 129 130 222 223 224 225 226 227 228"
 
+check if deployed: 
+```bash
+for n in $NODES; do
+  printf "%s:%s " "$n" "$(ssh -o ConnectTimeout=5 root@node-a8-$n \
+    'grep -c "Return partial results" ~/QBeacon_Sat/network/transport.py' 2>/dev/null)"
+done; echo
+
+
 for n in $NODES; do
   scp -q -o StrictHostKeyChecking=no \
     ~/QBeacon_Sat/beacon_core/epoch.py \
@@ -128,11 +136,11 @@ done
 ```
 
 **To Kill Processes running on Nodes**
-
-```
 for n in 7 8 9 10 11 12 13 14 15 16 17 44 45 46 47 48 49 50 51 52 53 54 122 123 124 125 126 127 128 129 130 222 223 224 225 226 227 228; do
   ssh -o StrictHostKeyChecking=no root@node-a8-$n "pkill -f 'python3 main.py'" 2>/dev/null
 done
+```
+
 ```
 
 **Pulling folders down**
