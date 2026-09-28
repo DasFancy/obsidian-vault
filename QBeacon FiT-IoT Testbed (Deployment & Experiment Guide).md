@@ -507,6 +507,14 @@ RUN_SUITE=rerun9 \
 EPOCHS=50 \
 bash run_variety.sh 2>&1 | tee ~/rerun9_$(date +%Y%m%d_%H%M).log
 
+Latest version of runs: 
+
+EPOCH_SEC=150 ANCHOR_ASYNC=0 \
+COMMIT_WINDOW_SEC=30 REVEAL_WINDOW_SEC=20 RECONSTRUCTION_TIMEOUT=25 \
+MONITOR_SEC_PER_EPOCH=350 BEACON_NET_PREFIX=10.0.12 \
+ANCHOR_TCP="127.0.0.1:29100" RUN_SUITE=rerun9 EPOCHS=50 \
+bash run_variety.sh 2>&1 | tee ~/rerun10_$(date +%Y%m%d_%H%M).log
+
 
 ```
 
@@ -514,3 +522,23 @@ This is the correct invocation because `run_experiment.sh` parses `--anchor-t
 
 **While using the anchor_tunnel.sh make sure that the first node is pointed to the device properly. I made the script more general but this is a point to note that if I change node ordering randomly for example, if the inital node is 30, instead of 2, the IP should be redirected properly !! **
 
+## Archive and pull
+
+bash
+
+```bash
+# frontend
+cd ~/results
+tar czf ~/sweep_$(date +%Y%m%d).tgz *_v2 2>/dev/null
+ls -lh ~/sweep_*.tgz
+```
+
+bash
+
+```bash
+# local PC
+mkdir -p ~/qbeacon_sat_results && cd ~/qbeacon_sat_results
+scp siddas@grenoble.iot-lab.info:~/sweep_*.tgz .
+tar xzf sweep_*.tgz
+ls -d *_v2
+```
