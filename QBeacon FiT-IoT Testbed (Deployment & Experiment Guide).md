@@ -136,7 +136,7 @@ done
 ```
 
 **To Kill Processes running on Nodes**
-for n in 7 8 9 10 11 12 13 14 15 16 17 44 45 46 47 48 49 50 51 52 53 54 122 123 124 125 126 127 128 129 130 222 223 224 225 226 227 228; do
+for n in 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 57 59 60 61 62 63 64 65 66 67 68 69; do
   ssh -o StrictHostKeyChecking=no root@node-a8-$n "pkill -f 'python3 main.py'" 2>/dev/null
 done
 ```
@@ -514,6 +514,8 @@ COMMIT_WINDOW_SEC=30 REVEAL_WINDOW_SEC=20 RECONSTRUCTION_TIMEOUT=25 \
 MONITOR_SEC_PER_EPOCH=350 BEACON_NET_PREFIX=10.0.12 \
 ANCHOR_TCP="127.0.0.1:29100" RUN_SUITE=rerun9 EPOCHS=50 \
 bash run_variety.sh 2>&1 | tee ~/rerun10_$(date +%Y%m%d_%H%M).log
+
+
 
 
 ```
