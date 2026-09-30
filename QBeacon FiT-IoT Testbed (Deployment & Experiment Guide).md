@@ -51,8 +51,8 @@ ssh siddas@grenoble.iot-lab.info "cd ~ && tar xzf qbeacon.tgz && rm qbeacon.tgz 
 
 While only uploading single file do from the local system: 
 ```
-scp ~/QBeacon_Sat/run_experiment.sh \
-  siddas@grenoble.iot-lab.info:~/QBeacon_Sat/run_experiment.sh
+scp ~/QBeacon_Sat/beacon_core/epoch.py \
+  siddas@grenoble.iot-lab.info:~/QBeacon_Sat/beacon_core/epoch.py
 ```
 After the new migration of A8 Grenoble nodes in August, the "rsync" hasn't been functioning within the specific A8 nodes. Another alternative was using "tar."
 **Step 2.2 - Run deploy.sh from frontend**
