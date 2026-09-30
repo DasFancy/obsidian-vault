@@ -21,7 +21,7 @@ iotlab-auth -u YOUR_USERNAME
 **Step 1 - Reserve Nodes**
 Submit reservation requests to reserve specific A8 nodes to deploy the protocol. A standard reservation looks as follows: 
 ```
-iotlab-experiment submit -n qrng_run -d 280 -l grenoble,a8,122-131+197-212+214-228
+iotlab-experiment submit -n hashdelay_v3 -d 4320 -l grenoble,a8,29-55+57-71+73-80
 ```
 
 One can check the status of the nodes with the following code: 
@@ -145,8 +145,7 @@ done
 
 **Pulling folders down**
 
-```
-scp -r siddas@grenoble.iot-lab.info:'~/results/20260914_161334_qrng_n4_post_quantum_pq_anchor_tcp_test' ~/qbeacon_sat_results/
+scp -r siddas@grenoble.iot-lab.info:'~/results/qbeacon_results_snapshot_20260930_0747UTC.tgz' ~/qbeacon_sat_results/Aeroconf
 ```
 
 Usually with pulling data, I clunk a lot of garbage with log files. Meaningless/unwanted warnings can clunk the entire log files, so it is better to pull only the .csv files. 
@@ -364,7 +363,7 @@ ssh -N -T \
   
   Longer Tunnel
   
-  while true; dodo
+  while true; do
   echo "[anchor-tunnel] starting $(date)"
 
   ssh -N -T \
