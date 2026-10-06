@@ -583,12 +583,407 @@ cd ~/QBeacon_Sat && ./anchor_tunnel.sh
 ssh root@node-a8-7 "python3 -c \"import socket; socket.create_connection(('127.0.0.1',29100),timeout=3); print('OK')\""
 ```
 
-**Verify before launch**
-
-- [ ]  `ANCHOR_ASYNC=0` on the command line — **not** relying on defaults
-- [ ]  `ANCHOR_TCP=127.0.0.1:29100` (node-local, not `19100`)
-- [ ]  Node 0 log shows `hardware anchor attached (SYNC)`
-- [ ]  Uplink not saturated
 
 
 
+# AeroPQ / QBeacon — Consensus Divergence Post-Mortem
+
+> **Scope.** Root-cause analysis and remediation log for the multi-output ("fork") condition observed during the 38-node FIT IoT-LAB Grenoble campaign, 30 Sep – 2 Oct 2026. Written for future system-tuning reference. **Status.** Resolved. Paper submitted. **Tags.** `#qbeacon` `#postmortem` `#distributed-systems` `#consensus` `#iotlab` `#tuning`
+
+---
+
+## 1. Executive Summary
+
+A 38-node post-quantum randomness beacon was producing **multiple distinct `beacon_output_hex` values for the same epoch** — a chain fork. Baseline runs showed `strict_complete_and_agree = 0/50` and `distinct_outputs = 2` from epoch 1 onward.
+
+The root cause was **not** a cryptographic flaw. It was a **race between transcript freezing and commit arrival**: nodes froze non-identical commit sets, producing divergent `CommitDigest_e`, which propagated into `DelayInput_e` and `beacon_output`, and then chained forward irrecoverably.
+
+Resolution required **five distinct fixes** applied across three files over four validation cycles. Final state: `max_distinct = 1` on every recorded epoch across six fork-free runs, with `sum_withheld_unrecovered = 0` across all withholding levels up to t+1.
+
+**Key lesson:** the correct fix was _not_ to demand complete arrival (that caused availability collapse) but to let the **AGREE round** — not arrival completeness — enforce transcript identity, backed by a `2t+1` quorum floor.
+
+---
+
+## 2. System Under Test
+
+|Parameter|Value|
+|---|---|
+|Nodes|n = 38 (IoT-LAB A8, Grenoble)|
+|Byzantine threshold|t = ⌊(n−1)/3⌋ = **12**|
+|Reconstruction threshold|k = t+1 = **13**|
+|Quorum|2t+1 = **25**|
+|Crypto profile|`post_quantum` — Merkle-tree VSS (`merkle_share_vss_v1`), SHA3-256|
+|Delay function|HashDelay, `post_quantum:hashdelay:sha3_256`, **T = 16384**|
+|Entropy|IDQ QRNG over HTTPS, `QRNG_PREFETCH=1`|
+|Anchor|nRF52840, node 0 only, TCP bridge `127.0.0.1:29100`|
+|Epoch state machine|`IDLE → COMMITTING → REVEALING → RECOVERING → FINALIZED \| FAILED`|
+
+### Output binding chain
+
+```
+CommitDigest_e = H(domain ‖ epoch ‖ prev_beacon ‖ canonical_params
+                   ‖ count ‖ ⋃_sorted(node_id ‖ commitment ‖ public_vss))
+
+DelayInput_e   = H(domain ‖ epoch ‖ prev_beacon ‖ CommitDigest_e
+                   ‖ delay_mode ‖ delay_T)
+
+beacon_output  = derive_beacon_output_v2(epoch, prev_beacon, CommitDigest_e,
+                                         entropy_digest, delay_mode, delay_output)
+```
+
+**Critical property:** `CommitDigest_e` is a function of the _frozen dealer set_. Any disagreement on that set — even by one dealer — yields a different digest, a different delay input, and a different beacon. And because `prev_beacon` feeds the next epoch, divergence is **permanent without resync**.
+
+---
+
+## 3. The Two Agreement Metrics
+
+Understanding the whole post-mortem depends on this distinction. From `analyze_run_all.py → build_epoch_agreement()`:
+
+|Column|Meaning|
+|---|---|
+|`output_agreement_among_present`|1 iff all nodes that _recorded a row_ produced one `beacon_output_hex` — **safety**|
+|`strict_complete_and_agree`|1 iff agreement **AND** `len(nodes_present) == 38` — **safety + liveness**|
+|`transcript_complete`|1 iff `min(n_contributors) ≥ 38`|
+|`distinct_outputs`|unique outputs per epoch — **`max_distinct == 1` means no fork**|
+|`sum_withheld_unrecovered`|dealers in frozen set never reconstructed — **must be 0**|
+
+> **Reading rule.** Low `strict` with high `present_agree` is the **fail-stop guard working**, not degradation. A node that cannot see the full transcript raises `EpochSkip` and writes **no CSV row** — `metrics.record()` fires only when `result is not None`. Epoch counts are therefore _recorded_, not _attempted_.
+
+---
+
+## 4. Issue Log
+
+### ISSUE-1 — Deaf node (inbound transport failure)
+
+**Symptom.** Node 5 logged `Insufficient commits: 1/13` for three consecutive epochs while 37 nodes agreed perfectly with identical `commit_digest`.
+
+**Diagnostic trail.**
+
+```
+20:30:19  [PeerWait] All 37 peers ready
+20:30:33  Epoch 0 skipped — resyncing chain state with peers
+20:30:40  [resync] no peer beacon state available
+20:31:04  Epoch 1 SKIPPED: Insufficient commits: 1/13
+20:31:16  [resync] no epoch reached t+1 agreement
+20:31:38  [resync] chain desync repaired: 0000... -> 205335c1... (37/37 peers)
+20:32:02  Epoch 1 SKIPPED: Insufficient commits: 1/13
+```
+
+**The asymmetry is the diagnosis.** Node 5 could _send_ to 37 peers (its commit appeared in everyone's AGREE set) but _received_ from zero. Outbound worked; inbound did not.
+
+**Root cause.** `_peer_reachable` only tests outbound. Nothing verified that node 5's own `ThreadingHTTPServer` was reachable _from_ peers. Two contributing factors:
+
+1. **Late bind.** `run_experiment.sh` launched 38 nodes via sequential `ssh -n -f`. Node 5 (6th launch) may have bound its port after peers had already fired epoch-0 commits. `transport._send` retried `MAX_RETRIES` then dropped — the commit was lost permanently.
+2. **Port held by dying process.** Step 1 did `pkill` then `sleep 2`, but `main.py`'s `finally` block sleeps `RECONSTRUCTION_TIMEOUT + 2 = 27 s` before `network.stop()`. A node still in that window holds its socket.
+
+**Secondary finding.** `setup_logging` sets the file handler to `WARNING`, so `logger.info` bind confirmations never reached `node_N.log` — the failure was invisible.
+
+**Fix.**
+
+```python
+# transport.py — start()
+def start(self):
+    port = self.nodes[self.node_id]["port"]
+    ThreadingHTTPServer.allow_reuse_address = True
+    try:
+        server = ThreadingHTTPServer(("0.0.0.0", port), BeaconRequestHandler)
+    except OSError as e:
+        logger.error(f"[Net] FATAL: node {self.node_id} cannot bind :{port} — {e}")
+        raise
+    ...
+    logger.warning(f"[Net] Node {self.node_id} LISTENING on :{port}")   # WARNING, not INFO
+```
+
+```bash
+# run_experiment.sh — Step 1
+sleep 30        # was: sleep 2
+```
+
+**Verification.** `patchcheck2` onward: zero `Insufficient commits: 1/` across all node logs.
+
+---
+
+### ISSUE-2 — Serial resync poll (55-second blocking window)
+
+**Symptom.** A skipped node's recovery attempt failed twice before succeeding on the third try.
+
+**Root cause.** `_resync_prev_beacon` polled 37 peers **sequentially** with `requests.get(..., timeout=1.5)` → up to **55 s** of blocking. Peers advanced mid-poll; `publish_beacon_state` only updates after `_run_epoch` returns. By the time the poll completed, the sampled states were stale and inconsistent.
+
+**Fix.**
+
+```python
+# main.py — _resync_prev_beacon()
+from concurrent.futures import ThreadPoolExecutor
+
+def _poll(p):
+    try:
+        r = req.get(f"http://{p['host']}:{p['port']}/beacon", timeout=1.5)
+        return r.json() if r.status_code == 200 else None
+    except Exception:
+        return None
+
+with ThreadPoolExecutor(max_workers=max(1, len(peers))) as ex:
+    responses = list(ex.map(_poll, peers))
+```
+
+**Effect.** 55 s → ~2 s. Mirrors the threading already used in `_broadcast_all`.
+
+---
+
+### ISSUE-3 — Single-shot resync (no retry)
+
+**Symptom.** Node adopted genesis `b"\x00"*32` as `prev_beacon` and chained forward on a private fork forever.
+
+**Root cause.** One resync attempt, then the epoch counter advanced regardless.
+
+**Fix.**
+
+```python
+# main.py — start(), skip branch
+for attempt in range(5):
+    if self._resync_prev_beacon():
+        break
+    self.logger.warning(f"[resync] attempt {attempt+1}/5 failed, retrying in 5s")
+    time.sleep(5.0)
+```
+
+---
+
+### ISSUE-4 — AGREE threshold too permissive ⭐ PRIMARY ROOT CAUSE
+
+**Symptom.** `base_all`: `distinct_outputs = 2` from epoch 1 onward, with `mean_contributors = 38.0` on **both** branches. Every node claimed a complete 38-dealer transcript, yet produced different outputs.
+
+**Root cause.** The AGREE round retained a dealer if **≥ t+1 = 13 voters** reported the same commitment hash. With `need` set below `self.n`, different nodes completed the AGREE round having heard from _different voter subsets_, and therefore froze _different dealer sets_ — while each still counted 38 contributors locally.
+
+**This was the actual fork mechanism.** Not a crypto bug, not a transport bug — a **threshold-vs-membership race**.
+
+**Fix (part A).**
+
+```python
+# epoch.py — collect_commit_sets()
+need = self.n          # wait for all 38 voters before resolving the AGREE set
+```
+
+**Fix (part B) — make the AGREE set authoritative.** The original code only _dropped_ dealers; it never aborted when the agreed set named a dealer the local node lacked.
+
+```python
+# epoch.py — AGREE block in run()
+missing = agreed - set(self._commits.keys())
+if missing:
+    self.state = EpochState.FAILED
+    raise EpochSkip(
+        f"[Epoch {self.epoch_id}] AGREE set includes dealers we lack: "
+        f"{sorted(missing)} — skipping to preserve I6"
+    )
+```
+
+**Cost.** AGREE round latency rose from ~3.7 s to ~15 s. Against the then-default `COMMIT_WINDOW_SEC=30`, this consumed half the window and produced late-commit rejections (see ISSUE-5).
+
+---
+
+### ISSUE-5 — Window variables never propagated to nodes
+
+**Symptom.** `COMMIT_WINDOW_SEC=45` set on the command line had no effect. Logs showed `Ignoring late commit from 35 (transcript already frozen)` with `commit_phase_ms = 27,623` against a 30 s window.
+
+**Root cause.** `run_experiment.sh` Step 3's SSH env block exported `COMMITTEE_SIZE`, `WITHHOLD_NODES`, `ANCHOR_ASYNC`, `DELAY_SCHEME`, `HASHDELAY_*` — but **not** the window variables. Nodes silently used defaults.
+
+**Fix.**
+
+```bash
+# run_experiment.sh — Step 3 SSH env block
+EPOCH_DURATION_SEC=${EPOCH_SEC} \
+COMMIT_WINDOW_SEC=${COMMIT_WINDOW_SEC:-30} \
+REVEAL_WINDOW_SEC=${REVEAL_WINDOW_SEC:-20} \
+RECONSTRUCTION_TIMEOUT=${RECONSTRUCTION_TIMEOUT:-25} \
+QRNG_PREFETCH=${QRNG_PREFETCH} \
+```
+
+Also recorded in `experiment_info.txt` so configuration is auditable post-hoc.
+
+> **Generalised lesson.** Any tunable that does not appear in the remote-launch env block is a **silent default**. Audit the full env surface, and echo every effective value into the run manifest.
+
+---
+
+### ISSUE-6 — Over-strict commit gate → availability collapse ⭐ MOST INSTRUCTIVE
+
+**Symptom.** After requiring all `self.n` commits, forks vanished — but **`base_all` died at epoch 31 of 50** with monotonic attrition:
+
+```
+epoch 0–4 : 38 present
+epoch 5–6 : 37
+epoch 7   : 36
+epoch 8   : 35
+epoch 9   : 34      ... and so on, never recovering
+```
+
+Skip counts across all runs: **186,793 `below quorum`**, **41,034 `unrecovered dealers in frozen set`**, **4,473 `AGREE set includes dealers we lack`**.
+
+**The decisive signal:** at the time, `incomplete commit set` skips numbered **100,310** against **zero** AGREE-set violations. The AGREE round was not the bottleneck. **Arrival completeness was.**
+
+**Root cause — the death spiral.**
+
+```
+node misses 1 of 38 commits
+  → _wait_for_commits raises EpochSkip (n_commits < self.n)
+  → writes no row, enters resync
+  → but _resync_prev_beacon needs 2t+1 = 25 peers with current published state
+  → during mass skipping, fewer than 25 have published
+  → all 5 retries fail
+  → node falls further behind
+  → skips again next epoch  ⟲
+```
+
+Skips clustered on the **highest logical IDs** — node36 (108,781), node33 (99,421), node34 (98,537), node35 (85,006). These are launched last by the sequential SSH loop, start latest, and never catch up.
+
+**Fix — relax to quorum, let AGREE enforce identity.**
+
+```python
+# epoch.py — _wait_for_commits()
+n_commits = len(self._commits)
+quorum = 2 * self.t + 1          # 25 of 38
+
+if n_commits < quorum:
+    self.state = EpochState.FAILED
+    raise EpochSkip(
+        f"[Epoch {self.epoch_id}] below quorum: {n_commits}/{quorum}"
+    )
+```
+
+**Why this is safe.** I6 is enforced by the AGREE round's `t+1`-vote threshold **plus** the `missing` abort — nodes must _agree_ on the frozen set, not all receive it simultaneously. Requiring universal arrival over HTTP at n=38 is neither necessary nor achievable.
+
+**Fix — degraded-quorum resync fallback.** `2t+1` is correct for fork rejection but unreachable during mass skipping:
+
+```python
+# main.py — _resync_prev_beacon()
+if votes is None:
+    for ep in sorted(by_epoch.keys(), reverse=True):
+        c = by_epoch[ep]
+        top_hex, top_n = c.most_common(1)[0]
+        if top_n >= self.t + 1 and (
+            len(c) == 1 or c.most_common(2)[1][1] < self.t + 1
+        ):
+            self.logger.warning(
+                f"[resync] degraded quorum accept at epoch {ep}: {top_n} votes"
+            )
+            votes = c
+            self._epoch_id = ep + 1
+            break
+
+if votes is None:
+    self.logger.warning("[resync] no epoch reached quorum agreement")
+    return False
+```
+
+> **Note on the double `if votes is None`.** Intentional. The first block _may assign_ `votes` via the fallback; the second checks whether the fallback also failed. Collapsing them would return `False` before the fallback ran. A `for...else` is the equivalent single-block form.
+
+---
+
+### ISSUE-7 — Wrong delay scheme (silent default)
+
+**Symptom.** `patchcheck2` reported `board = 68,359 µs` — 10× faster than the established ~660,000 µs population.
+
+**Root cause.** `delay_mode = legacy:post_quantum:minroot T=128`. `run_experiment.sh` defaults `DELAY_SCHEME=${DELAY_SCHEME:-minroot}`; invoking it directly (not via `run_variety.sh`) never set HashDelay.
+
+**Impact.** Those board times are **not comparable** to the HashDelay population. Run excluded from all figures.
+
+**Fix.** Always pass explicitly:
+
+```bash
+DELAY_SCHEME=hashdelay HASHDELAY_T=16384
+```
+
+---
+
+### ISSUE-8 — Bash substring-expansion bug
+
+```bash
+export ANCHOR_ASYNC="${ANCHOR_ASYNC: -0}"      # WRONG — substring with offset -0
+export ANCHOR_ASYNC="${ANCHOR_ASYNC:-0}"       # RIGHT — default value
+```
+
+`${VAR: -0}` is _substring expansion_, returning the whole string (or empty if unset) — **not** a default. With `ANCHOR_ASYNC` unset, `run_experiment.sh` fell back to `ANCHOR_ASYNC=1`, meaning `_AsyncAnchor.verify()` returned the **previous** epoch's result. Anchor numbers would be lagged by one epoch.
+
+> **Tuning rule.** The space in `${VAR: -0}` changes the operator entirely. Grep every config script for `: -` versus `:-`.
+
+---
+
+### ISSUE-9 — Analyzer averaging failure rows
+
+**Symptom.** `summary.json` reported `board_us = 330,316` for `wht_all_v2` while the console printed the correct ~660,000.
+
+**Root cause.** Failed anchor rows carry `anchor_verify_us = -1`. `main()` filtered with `> 0`; `write_summary()` did not:
+
+```python
+anchor["board_us"] = safe_stats(ag["anchor_verify_us"])                       # WRONG
+anchor["board_us"] = safe_stats(ag[ag["anchor_verify_us"] > 0]["anchor_verify_us"])  # RIGHT
+```
+
+At ~50% pass rate the mean halves. **Rule: sentinel values must be filtered at every aggregation site, not just the one you're looking at.**
+
+---
+
+## 5. Remediation Summary
+
+|#|File|Location|Change|
+|---|---|---|---|
+|1|`transport.py`|`start()`|Catch `OSError` on bind; log at `WARNING`|
+|2|`run_experiment.sh`|Step 1|`sleep 2` → `sleep 30`|
+|3|`main.py`|`_resync_prev_beacon()`|`ThreadPoolExecutor` parallel poll|
+|4|`main.py`|`start()` skip branch|5× retry loop, 5 s backoff|
+|5|`main.py`|`_resync_prev_beacon()`|Degraded-quorum fallback at `t+1` unambiguous|
+|6|`epoch.py`|`collect_commit_sets()`|`need = self.n`|
+|7|`epoch.py`|AGREE block in `run()`|`missing` → `EpochSkip`|
+|8|`epoch.py`|`_wait_for_commits()`|`self.n` → `2t+1 = 25` quorum|
+|9|`run_experiment.sh`|Step 3 SSH env|Propagate window vars + record in manifest|
+|10|`run_variety.sh`|line 48|`${VAR: -0}` → `${VAR:-0}`|
+|11|`analyze_run_all.py`|`write_summary()`|Filter `anchor_verify_us > 0`|
+
+### Deployment verification (mandatory — one unpatched node reforks the chain)
+
+```bash
+for n in $NODES; do
+  a=$(ssh -o ConnectTimeout=5 root@node-a8-$n \
+      "grep -c 'below quorum' ~/QBeacon_Sat/beacon_core/epoch.py" 2>/dev/null)
+  b=$(ssh -o ConnectTimeout=5 root@node-a8-$n \
+      "grep -c 'ThreadPoolExecutor' ~/QBeacon_Sat/main.py" 2>/dev/null)
+  c=$(ssh -o ConnectTimeout=5 root@node-a8-$n \
+      "grep -c 'degraded quorum accept' ~/QBeacon_Sat/main.py" 2>/dev/null)
+  printf "node-a8-%-4s quorum=%s pool=%s fallback=%s\n" "$n" "${a:-X}" "${b:-X}" "${c:-X}"
+done
+```
+
+---
+
+## 6. Validation Cycles
+
+|Cycle|Config|Result|
+|---|---|---|
+|`patchcheck`|MinRoot T=128, 5 ep|Node 5 deaf, `Insufficient commits: 1/13` ×3|
+|`patchcheck2`|MinRoot T=128, 5 ep|No skips; late-commit rejections from nodes 1, 35|
+|`patchcheck3`|HashDelay T=16384, 5 ep|ep0 clean; nodes 33 then 1 forked (3 distinct at ep3/4)|
+|`patchcheck4`|+`self.n` gate, 5 ep|**`max_distinct = 1` all 5 epochs**; ep4 node 1 skipped (guard working)|
+|`patchcheck5`|+`2t+1` relax, 5 ep|**5/5 strict, 5/5 present_agree, 5/5 anchor PASS**|
+
+> `patchcheck4` epoch 4 is the canonical illustration: node 1 absent, yet all 37 present nodes show `n_recovered = 1`, `n_contributors = 38`. Node 1 skipped rather than finalizing a divergent digest. Cost visible — `total_latency_ms` 14,500 → 45,000, `reveal_phase_ms` ≈ 24,000 as `collect_shares_batch` ran against `RECONSTRUCTION_TIMEOUT = 25`.
+
+---
+
+## 7. Final Campaign Results
+
+### Fork-free runs
+
+|Run|Recorded|Strict|Present-agree|max_distinct|Board µs|RTT ms|
+|---|---|---|---|---|---|---|
+|`base_all`|31|5|**31/31**|**1**|660,503|2,697|
+|`c_full` (c=38)|50|25|**50/50**|**1**|659,752|2,653|
+|`wh1_all`|20|4|**20/20**|**1**|660,675|2,760|
+|`wht_all` (wh=12)|20|3|**20/20**|**1**|661,468|3,257|
+|`whover_all` (wh=13)|21|5|**21/21**|**1**|660,961|3,249|
+|`chalf_wht`|50|**0**|**50/50**|**1**|659,128|5,125|
+
+### Withholding degradation — zero unrecovered at every level
+
+|Run|Withheld|Recovered|**Unrecovered**|min_present|
+|---|---|---|---|---|
+|`wh1_all`|1|1,336|**0**|37|
+|`whlight_all`|||||
