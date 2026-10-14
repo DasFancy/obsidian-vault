@@ -210,11 +210,20 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "pdf-plus:PDF++: Toggle auto-copy": false,
+      "pdf-plus:PDF++: Toggle auto-focus": false,
+      "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
   "active": "7a5159aa7d334994",
   "lastOpenFiles": [
+    "Study/IEEE IoT Research/Ghodsi.pdf",
+    "Study/IEEE IoT Research/Ghodsi.pdf.opdownload",
+    "Study/IEEE IoT Research/waldspurger.ps",
+    "Study/IEEE IoT Research/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
+    "Study/IEEE IoT Research/A_Quantitative_Measure_Of_Fairness_And_D.pdf.opdownload",
+    "Study/IEEE IoT Research",
     "Beacon - Findings and Improvements.md",
     "Study/Study for IEEE IoT.md",
     "Study",
