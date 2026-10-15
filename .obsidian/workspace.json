@@ -70,7 +70,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:project/ieee-iot",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -216,7 +216,7 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "7a5159aa7d334994",
+  "active": "074f89c1c3458587",
   "lastOpenFiles": [
     "Study/Study for IEEE IoT.md",
     "Research/Templates/Literature Note.md",

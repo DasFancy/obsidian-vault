@@ -10,6 +10,8 @@ doi:
 pdf: "[[_pdfs/IEEE-IoT/filename.pdf]]"
 tags:
   - project/ieee-iot
+  - domain/iot
+  - concept/fairness
 ---
 
 # Paper title

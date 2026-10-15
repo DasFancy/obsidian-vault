@@ -93,7 +93,7 @@
   "showStatusInToolbar": true,
   "highlightColorSpecifiedOnly": false,
   "doubleClickHighlightToOpenBacklink": true,
-  "hoverHighlightAction": "preview",
+  "hoverHighlightAction": "open",
   "paneTypeForFirstMDLeaf": "right",
   "singleMDLeafInSidebar": true,
   "alwaysUseSidebar": true,
