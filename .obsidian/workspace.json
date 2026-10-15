@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Study/Study for IEEE IoT.md",
+                "file": "Research/Templates/Literature Note.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Study for IEEE IoT"
+              "title": "Literature Note"
             }
           }
         ],
@@ -216,8 +216,14 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "5cff9ee7a6f6788c",
+  "active": "7a5159aa7d334994",
   "lastOpenFiles": [
+    "Study/Study for IEEE IoT.md",
+    "Research/Templates/Literature Note.md",
+    "Research/Templates",
+    "Research/Literature",
+    "Literature",
+    "Research",
     "_pdfs/IEEE-IoT/Ghodsi.pdf",
     "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
     "_pdfs/IEEE-IoT",
@@ -229,14 +235,8 @@
     "IEEE Aersopace Relevant Papers.md",
     "Nordic Integration (Anchor).md",
     "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
-    "Study/Study for IEEE IoT.md",
     "Study/IEEE IoT Research/Ghodsi.pdf",
     "Study/IEEE IoT Research/Ghodsi.pdf.opdownload",
-    "Study/IEEE IoT Research/waldspurger.ps",
-    "Study/IEEE IoT Research/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
-    "Study/IEEE IoT Research/A_Quantitative_Measure_Of_Fairness_And_D.pdf.opdownload",
-    "Study/IEEE IoT Research",
-    "Study",
     "Untitled.md",
     "A \"competitive\" DRB protocol.md",
     "Welcome.md"
