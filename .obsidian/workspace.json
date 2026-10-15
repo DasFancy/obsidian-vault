@@ -216,8 +216,12 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "7a5159aa7d334994",
+  "active": "5cff9ee7a6f6788c",
   "lastOpenFiles": [
+    "_pdfs/IEEE-IoT/Ghodsi.pdf",
+    "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
+    "_pdfs/IEEE-IoT",
+    "_pdfs",
     "Beacon - Findings and Improvements.md",
     "AT Commands.md",
     "Beacon - Security Proofs & Theorem.md",
@@ -235,7 +239,6 @@
     "Study",
     "Untitled.md",
     "A \"competitive\" DRB protocol.md",
-    "Untitled.base",
     "Welcome.md"
   ]
 }
