@@ -10,7 +10,9 @@
     "highTextContrast": false
   },
   "knownTags": {
-    "xgps": 1
+    "project": 2,
+    "xgps": 1,
+    "project/ieee-iot": 1
   },
   "tagColors": {},
   "_version": 4
