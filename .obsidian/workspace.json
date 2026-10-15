@@ -27,17 +27,18 @@
             "state": {
               "type": "pdf",
               "state": {
-                "file": "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
-                "page": 1,
+                "file": "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D_OCR.pdf",
+                "page": 2,
                 "left": -12,
-                "top": 796,
+                "top": 699,
                 "zoom": 1.204656862745098
               },
               "icon": "lucide-file-text",
-              "title": "A_Quantitative_Measure_Of_Fairness_And_D"
+              "title": "A_Quantitative_Measure_Of_Fairness_And_D_OCR"
             }
           }
         ],
+        "currentTab": 1,
         "stacked": true
       }
     ],
@@ -219,12 +220,13 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "7a5159aa7d334994",
+  "active": "edc5ca09d6b525bc",
   "lastOpenFiles": [
-    "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
-    "_pdfs/IEEE-IoT/Ghodsi.pdf",
-    "Research/Templates/Literature Note.md",
     "Research/Literature/Jain's Index.md",
+    "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D_OCR.pdf",
+    "_pdfs/IEEE-IoT/Ghodsi.pdf",
+    "_pdfs/IEEE-IoT/A_Quantitative_Measure_Of_Fairness_And_D.pdf",
+    "Research/Templates/Literature Note.md",
     "Research/Literature/Jain's Fairness Index.md",
     "QBeacon FiT-IoT Testbed (Deployment & Experiment Guide).md",
     "Study/Study for IEEE IoT.md",
@@ -241,7 +243,6 @@
     "IEEE Aersopace Relevant Papers.md",
     "Nordic Integration (Anchor).md",
     "Study/IEEE IoT Research/Ghodsi.pdf",
-    "Study/IEEE IoT Research/Ghodsi.pdf.opdownload",
     "Untitled.md",
     "A \"competitive\" DRB protocol.md",
     "Welcome.md"

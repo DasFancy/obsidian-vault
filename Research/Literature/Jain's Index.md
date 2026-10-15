@@ -17,9 +17,11 @@ tags:
 # Paper title
 
 ## Why am I reading this?
+
 In order to understand the applications I am conjuring up for IEEE IoT journal, I must understand fairness distribution in any form of distributed system.
 
 ## Triage
+
 **Problem:**
 
 **Main contribution:**
