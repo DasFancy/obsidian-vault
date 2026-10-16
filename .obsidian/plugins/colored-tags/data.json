@@ -10,7 +10,13 @@
     "highTextContrast": false
   },
   "knownTags": {
-    "xgps": 1
+    "concept": 4,
+    "domain": 3,
+    "project": 2,
+    "xgps": 1,
+    "concept/fairness": 1,
+    "domain/iot": 1,
+    "project/ieee-iot": 1
   },
   "tagColors": {},
   "_version": 4

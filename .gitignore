@@ -1,0 +1,13 @@
+# External PDF library symlink/folder
+/_pdfs
+
+# Incomplete browser downloads
+*.opdownload
+*.part
+*.crdownload
+
+# Common temporary/system files
+*~
+*.swp
+.DS_Store
+Thumbs.db
