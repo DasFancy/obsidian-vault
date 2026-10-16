@@ -52,7 +52,36 @@ In my case, if the beacon-derived scheduler selects devices to receive uplink op
 	  
 So basically, Jain's index can tell me about the fairness in resource allocation, ==🟠but it can't exactly tell me which fairness objective the scheduler should pursue.== 
 
+Another important relevance. If I consider a system of N=100 IoT devices and m are my eligible devices m=10, then the Jain's index can be:
+$$
+J = \frac{10^{2}}{100(10)} = 0.1
+$$
+A perfectly honest, unifromly random lottery selecting 10 of 100 eligible devices produces exactly this result in every epoch. Even if the randomness is perfectly unpredictable and unbiased, the single-epoch fairness index is: 
+$$
+J_{epoch} = \frac{m}{N}
+$$
+Therefore, I must evaluate the fairness over various epochs (which is intuitive here). If I observe 100 scheduling epochs, define: 
+$$
+a_{i}(T) = \sum_{e=1}^{T}{A_{i,e}}
+$$
+where: 
 
+$$
+A_{i,e} = \begin{cases} 
+1, & \text{device i receives an opportunity in epoch e},\\  
+0,&  \text{otherwise} 
+\end{cases} 
+$$
+
+Then: 
+$$
+J(T) = \frac{(\sum_{i=1}^{N}{a_{i}(T))^{2}}}{N\sum_{i=1}^{N}a_{i}(T)^{2}}
+$$
+This measures how equally resources have been distributed across devices during the observational interval. Under independent, uniformly random selections with a fixed eligible population, cumulative resource shares converge toward equality as the number of epochs grows. Cosnequently: 
+
+$$
+J(T) \xrightarrow{}
+$$
 **Decision:** Read
 
 ## Reading notes
