@@ -111,6 +111,14 @@ Four important properties  > ([[A_Quantitative_Measure_Of_Fairness_And_D_OCR.pdf
 ### Method
 
 ### Results / evidence
+I should only consider Jain's index as a measure distribution of allocations, it does not establish that the mechanism producing those allocations was honest. It does not provide a model for malicious schedulers, adversarial seed selection, randomness manipulation, or public verification. 
+
+So, high Jain's fairness does not necessarily means verifiably honest scheduling. The index alone does not measure waiting-time tails, starvation probability, or deadline satisfaction.
+
+This could be by way of extension with security and operational performance metrics.
+
+==🟢Another figure idea:== Adversarial fairnessSeed-grinding attempts \(k\) Jain fairnessMeasure how manipulation affects allocation equality
+
 
 ### Questions and disagreements
 
