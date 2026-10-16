@@ -80,8 +80,20 @@ $$
 This measures how equally resources have been distributed across devices during the observational interval. Under independent, uniformly random selections with a fixed eligible population, cumulative resource shares converge toward equality as the number of epochs grows. Cosnequently: 
 
 $$
-J(T) \xrightarrow{}
+J(T) \xrightarrow[T\rightarrow \infty]{} 1
 $$
+Even after 100 epochs, those 10 devices receive every opportunity, while the remaining 90 receive none. Their fairness index remains J(T) = 0.1. That is why for my case, the cummulative fairness is more important than per-epoch fairness. 
+
+==🟢Note==: perhaps a Jain's fairness index versus a number of scheduling epochs plot could be nice. 
+
+
+> [!PDF|important] [[A_Quantitative_Measure_Of_Fairness_And_D_OCR.pdf#page=9&selection=194,0,196,2&color=important|Example 3:]]
+> > Example 3:
+> 
+> 
+
+An important example particularly for my work. E.g. some devices may be eligible during every epoch, while other participate only during particular contact window. Can be nice for the stringent/fast services. 
+
 **Decision:** Read
 
 ## Reading notes
