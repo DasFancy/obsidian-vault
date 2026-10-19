@@ -119,6 +119,16 @@ Therefore, merely depending upon Jain's fairness is not helpful in my evaluation
 $$J_{alloc} \; \Delta_{F} \; V_{e}$$
 where $\Delta_{F}$ and $V_{e}$ are preliminary notations for quantities I will formally define during the security-model stage. 
 
+Theorem 1 from section 7 is another important result worth retaining. In my analogy: 
+
+Suppose device $k$ has received more allocation opportunities than device $j$. If we transfer $\Delta x$ from device $k$ to device $j$, Jain fairness increases when: 
+
+$$ 0 < \Delta x < x_{k}-x_{j}$$
+Here, allocations must remain non-negative. 
+
+A malicious scheduler that systematically redirects opportunities from underserved devices toward already favored devices may reduce cumulative Jain fairness.
+
+**Perhaps come back to Section 7 when the program/system model is developed further
 
 ## Reading notes
 
@@ -155,6 +165,8 @@ Jain et al. (1984), Section 5 — Research notes
 3. Fraction-of-demand fairness uses x_i = min(a_i/d_i, 1) for d_i > 0 and is appropriate when requested service differs across devices.
 4. Dynamic eligibility may require entitlement-normalized service x_i = a_i/q_i, with q_i defined by an explicit reference policy. This is our adaptation.
 5. Jain's index measures allocation equality, not the honesty of the scheduler, public verifiability, absolute efficiency, waiting-time quality, or eligibility integrity.
+
+Section 7: The section establishes how Jain's index responds to resource exchanges and additional allocations, and gives maximization and bounded-allocation properties. Theorem 1 is particularly relevant: transferring resources from an over-served device to an under-served device increases fairness when the transfer is sufficiently small. For beacon-derived scheduling, systematic favoritism may reduce cumulative Jain fairness, but Jain fairness alone cannot detect every manipulation of randomized selection. No Section 7 theorem needs to be incorporated directly into the initial scheduling algorithm.
 
 **What I can use:**
 
