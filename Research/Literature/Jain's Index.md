@@ -94,7 +94,31 @@ Even after 100 epochs, those 10 devices receive every opportunity, while the rem
 
 An important example particularly for my work. E.g. some devices may be eligible during every epoch, while other participate only during particular contact window. Can be nice for the stringent/fast services. 
 
-**Decision:** Read
+**Demand Satisfaction Fairness
+
+For devices with positive demand $d_{i}(T)$ : 
+$$x_{i}(T) = \min \left(\frac{a_{i}(T)}{d_{i}(T)}, 1 \right)$$
+Then the Jain's formula can be applied to these $x_{i}(T)$ values.
+
+**Entitlement-normalized fairness 
+
+$$
+x_{T} = \frac{a_{i}(T)}{q_{i}(T)}
+$$
+where $q_{i}(T)  > 0$ represents its expected allocation under the reference scheduling policy. 
+
+IMP: An example scenario: 
+Scheduler A uses an honest PRNG; Scheduler B uses a seed-grinding strategy to favor particular devices, but still produces apparently balanced cumulative allocations. 
+
+They both can have similar Jain fairness indices. 
+
+Yet scheduler B violates my intended selection policy. 
+
+Therefore, merely depending upon Jain's fairness is not helpful in my evaluation. I need to establish expected selection probabilities and then measure whether adversarial behavior creates statistically meaningful deviations from them. This gives me a clean separation. 
+
+$$J_{alloc} \; \Delta_{F} \; V_{e}$$
+where $\Delta_{F}$ and $V_{e}$ are preliminary notations for quantities I will formally define during the security-model stage. 
+
 
 ## Reading notes
 
@@ -124,7 +148,13 @@ This could be by way of extension with security and operational performance metr
 
 ## Synthesis
 
-**One-sentence takeaway:**
+**Takeaway:**
+Jain et al. (1984), Section 5 — Research notes
+1. The allocation metric must be selected according to the application; Jain's index does not define what fairness should mean.
+2. For beacon-derived IoT/NTN lottery scheduling, primary fairness is cumulative per-device allocation of scheduling opportunities across epochs.
+3. Fraction-of-demand fairness uses x_i = min(a_i/d_i, 1) for d_i > 0 and is appropriate when requested service differs across devices.
+4. Dynamic eligibility may require entitlement-normalized service x_i = a_i/q_i, with q_i defined by an explicit reference policy. This is our adaptation.
+5. Jain's index measures allocation equality, not the honesty of the scheduler, public verifiability, absolute efficiency, waiting-time quality, or eligibility integrity.
 
 **What I can use:**
 
