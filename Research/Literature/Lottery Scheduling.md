@@ -116,4 +116,18 @@ The Section 5.4 MPEG experiment is particularly instructive: the authors found t
 
 My equivalent problem could be NTN propagation delay, gateway processing, missed contact windows, or physical-layer failures. A fair allocation of transmission opportunities does not necessarily produce fair delivered throughput. We should measure these separately.
 
+Waldspurger and Weihl (1994) — Final Research Extraction
+
+1. Lottery scheduling implements probabilistic proportional-share allocation using abstract resource tickets. For a single draw, p_i = t_i / sum_j t_j.
+2. Realized allocations fluctuate around expected values. Under independent fixed-probability lotteries, E[W_i] = np_i and Var(W_i) = np_i(1-p_i).
+3. Waiting time until the first win is geometrically distributed, with expectation 1/p_i. There is no deterministic finite waiting-time guarantee.
+4. Fairness should be validated by comparing expected versus observed allocation, including short and long observation windows.
+5. Ticket inflation demonstrates that unbiased randomness does not guarantee legitimate resource entitlements. Eligibility and weighting policies must be separately controlled.
+6. Random-number generation and resource-selection logic are separate functions. Our extension derives reproducible selection from a public authenticated beacon and precommitted eligibility.
+7. The original paper identifies communication-channel scheduling as a potential lottery application. Our novelty must therefore emphasize public verifiability, bias resistance, and practical constrained IoT/NTN deployment rather than the idea of network lottery scheduling itself.
+8. Normalize allocation against intended expectation when evaluating heterogeneous rights or targeted advantage; also report statistical uncertainty. A nonzero deviation alone does not establish manipulation.
+9. Benchmark scheduling and verification overhead against conventional schemes under matched workloads.
+
+Not needed for the initial paper: Mach kernel APIs, Park–Miller implementation, ticket-currency implementation details, Monte Carlo task scheduling, MPEG experiments, lock management, inverse lotteries, and multiple-resource optimization.
+
 **Connections:**
