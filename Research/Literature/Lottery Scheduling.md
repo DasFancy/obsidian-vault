@@ -62,18 +62,6 @@ The ticket-currency mechanism illustrates how the original authors separate reso
 
 ## Reading notes
 
-### Claims
-
-
-### Method
-
-### Results / evidence
-
-
-### Questions and disagreements
-
-## Synthesis
-
 **Takeaway:**
 
 Waldspurger and Weihl (1994), Section 5.1 — Fairness
@@ -87,6 +75,45 @@ Waldspurger and Weihl (1994), Section 5.1 — Fairness
 
 **What I can use:**
 
+1. Fig 4 and Fig 5 and its relevance in my work are as following: 
+
+| Fig 4                                                                                                                                                                | Fig 5                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Compare intended allocation with realized allocation<br><br>Evaluate allocation across shorter observation windows<br><br>Test different resource-entitlement ratios | Determine how quickly the scheduler approaches its intended proportions<br><br>Quantify deviations from expected service<br><br>Reveal short-term fluctuations hidden by long-run averages |
+For the initial equal-weight beacon lottery, the intended selection probability is 
+
+$$p_{i} = \frac{m}{N}$$
+
+If $N=100$ devices compete for $m=10$ opportunities each epoch, every device has an expected allocation probability of 0.1.
+Across $T$ independent epochs: 
+
+$$E[a_{i}(T)] = 0.1 T$$
+I can compare each device's observed allocation count with this expected value. 
+
+A useful normalized allocation deviation would be: 
+
+$$\epsilon_{i}(T) = \frac{a_{i}(T) - E[a_{i}(T)]}{E[a_{i}(T)]}$$
+This is the proposed evaluation measure, not an equation taken directly from Waldspurger and Weihl. It can be helpful in quantifying my beacon-derived scheduler follows the intended lottery distribution. 
+
+
+2. A summary 
+
+| Section                        | Important observation                                                                                                                           | Relevance                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 5.2–5.4                        | Lottery scheduling can adjust resource shares dynamically, but observed performance also depends on other system components                     | Relevant to distinguishing allocation decisions from actual IoT/NTN service |
+| 5.6 — System Overhead          | A scheduling mechanism must demonstrate acceptable computational overhead, not just good fairness                                               | Directly relevant to our constrained-device benchmarks                      |
+| 6 — Managing Diverse Resources | The authors explicitly identify communication resources, including network-port access and congested channels, as possible lottery applications | Supports the motivation for our IoT/NTN access-allocation model             |
+
+
+
 **Limitations:**
+
+Not sure if it is a limitation or not but reading throught the work I found out that the authors have prioritised "speed" of the RNG. No mention of its quality has been observed. 
+
+**Observations:
+
+The Section 5.4 MPEG experiment is particularly instructive: the authors found that the X server's round-robin request processing distorted the intended lottery allocation ratios. Changing the scheduling policy did not eliminate that external bottleneck.
+
+My equivalent problem could be NTN propagation delay, gateway processing, missed contact windows, or physical-layer failures. A fair allocation of transmission opportunities does not necessarily produce fair delivered throughput. We should measure these separately.
 
 **Connections:**
