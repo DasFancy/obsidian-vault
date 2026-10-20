@@ -63,25 +63,11 @@ The ticket-currency mechanism illustrates how the original authors separate reso
 ## Reading notes
 
 ### Claims
-Four important properties  > ([[A_Quantitative_Measure_Of_Fairness_And_D_OCR.pdf#page=5&selection=201,0,217,10&color=important|A_Quantitative_Measure_Of_Fairness_And_D_OCR, p.5]])
-> We feel the desired properties should be the following:
-
-1. Population size: Applicable to different numbers of users. In relevant to my work, the example can be drawn as : my network may need 50, 100, or 500 eligible IoT devices.
-2. Scale independence: should be unaffected by changing measurement units. I may measure allocations in slots, bytes, or airtime.
-3. Boundedness: A normalized index between 0 and 1. Enables a clear comparison between schedulers. 
-4. Continuity: Responds smoothly to changes in allocation. Help detects gradual changes in allocation equality.
 
 
 ### Method
 
 ### Results / evidence
-I should only consider Jain's index as a measure distribution of allocations, it does not establish that the mechanism producing those allocations was honest. It does not provide a model for malicious schedulers, adversarial seed selection, randomness manipulation, or public verification. 
-
-So, high Jain's fairness does not necessarily means verifiably honest scheduling. The index alone does not measure waiting-time tails, starvation probability, or deadline satisfaction.
-
-This could be by way of extension with security and operational performance metrics.
-
-==🟢Another figure idea:== Adversarial fairnessSeed-grinding attempts \(k\) Jain fairnessMeasure how manipulation affects allocation equality
 
 
 ### Questions and disagreements
@@ -89,14 +75,15 @@ This could be by way of extension with security and operational performance metr
 ## Synthesis
 
 **Takeaway:**
-Jain et al. (1984), Section 5 — Research notes
-1. The allocation metric must be selected according to the application; Jain's index does not define what fairness should mean.
-2. For beacon-derived IoT/NTN lottery scheduling, primary fairness is cumulative per-device allocation of scheduling opportunities across epochs.
-3. Fraction-of-demand fairness uses x_i = min(a_i/d_i, 1) for d_i > 0 and is appropriate when requested service differs across devices.
-4. Dynamic eligibility may require entitlement-normalized service x_i = a_i/q_i, with q_i defined by an explicit reference policy. This is our adaptation.
-5. Jain's index measures allocation equality, not the honesty of the scheduler, public verifiability, absolute efficiency, waiting-time quality, or eligibility integrity.
 
-Section 7: The section establishes how Jain's index responds to resource exchanges and additional allocations, and gives maximization and bounded-allocation properties. Theorem 1 is particularly relevant: transferring resources from an over-served device to an under-served device increases fairness when the transfer is sufficiently small. For beacon-derived scheduling, systematic favoritism may reduce cumulative Jain fairness, but Jain fairness alone cannot detect every manipulation of randomized selection. No Section 7 theorem needs to be incorporated directly into the initial scheduling algorithm.
+Waldspurger and Weihl (1994), Section 5.1 — Fairness
+
+1. The paper experimentally validates lottery scheduling by comparing intended ticket-allocation ratios with observed execution-rate ratios.
+2. Figure 4 measures allocation accuracy across different ticket ratios. Finite randomized scheduling windows produce deviations from expected proportions.
+3. Figure 5 studies fairness over shorter time windows, showing that overall proportional allocation can be maintained despite local fluctuations.
+4. Lottery fairness means agreement with intended proportional resource rights, not necessarily equal allocation.
+5. For our beacon scheduler, compare expected and observed per-device selection probabilities across epochs, evaluate convergence over observation windows, and separately quantify favored-group advantage under adversarial seed grinding.
+6. A verifiable beacon should match honest PRNG scheduling in statistical fairness; its distinct contribution is publicly reproducible, manipulation-resistant random selection.
 
 **What I can use:**
 
