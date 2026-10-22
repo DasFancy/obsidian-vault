@@ -130,4 +130,23 @@ Waldspurger and Weihl (1994) — Final Research Extraction
 
 Not needed for the initial paper: Mach kernel APIs, Park–Miller implementation, ticket-currency implementation details, Monte Carlo task scheduling, MPEG experiments, lock management, inverse lotteries, and multiple-resource optimization.
 
+***Possible Threat model
+Verifiable Beacon-Derived Lottery Scheduling — Model v0.1
+
+System: At epoch $e$, $N_e$ eligible devices compete for m_e identical resource opportunities, with $m_e <= N_e$. Each device can receive at most one opportunity per epoch.
+
+Commitment: Before the designated beacon round becomes known, a unique authenticated commitment C_e binds the canonical eligible set, epoch, capacity, allocation policy, and beacon-round identifier.
+
+Selection: After authenticating B_e, compute $s_i,e = H('alloc-v1' || e || B_e || C_e || i)$ for each eligible device. Select the m_e devices with the smallest scores, resolving ties canonically.
+
+Uniformity: Under ideal pseudorandom hash rankings, fixed eligibility, and a nonselectable unpredictable beacon, each eligible device has selection probability $m_e/N_e$.
+
+Repeated epochs: With fixed N,m and independent epochs, cumulative wins for each device have expectation $Tm/N$ and variance $T(m/N)(1-m/N)$.
+
+Threat model: An untrusted centralized PRNG scheduler may choose the best of k candidate seeds to favor subset F. Expected group-share inflation is modeled using the maximum of k independent hypergeometric draws.
+
+Security boundary: Beacon unpredictability and deterministic verification do not themselves establish legitimate eligibility, prevent omission before commitment, enforce execution, or guarantee bounded waiting times.
+
+Evaluation: Compare honest PRNG and beacon lotteries under matched workloads; benchmark seed-grinding advantage, Jain fairness, waiting time, verification, and overhead.
+
 **Connections:**
